@@ -25,6 +25,7 @@ pipeline{
                 sh 'npm install --no-audit'
             }
         }
+        parallel{
         stage('NPM Dependency Audit'){
             steps{
                 sh '''
@@ -40,6 +41,7 @@ pipeline{
                     --format ALL \\
                     --prettyPrint''', nvdCredentialsId: 'NVD-API-KEY', odcInstallation: 'OWASP-10'
             }
-      }
-}
+        }
+        }
+    }
 }
