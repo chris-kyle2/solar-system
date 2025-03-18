@@ -5,7 +5,7 @@ pipeline{
         }
     }
     tools{
-        nodeJS 'nodejs-22-6-0'
+        NodeJS 'nodejs-22-6-0'
     }
     stages{
         stage('Print Node and Npm Version'){
