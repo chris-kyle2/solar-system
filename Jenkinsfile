@@ -40,5 +40,6 @@ pipeline{
                     --format ALL \\
                     --prettyPrint''', nvdCredentialsId: 'NVD-API-KEY', odcInstallation: 'OWASP-10'
             }
-    }
+      }
+}
 }
