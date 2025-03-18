@@ -42,7 +42,6 @@ pipeline {
                     steps {
                         sh '''
                             echo "Running OWASP Dependency Check"
-                            dependency-check.sh \
                             --scan ./ \
                             --out reports \
                             --format ALL \
