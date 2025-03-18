@@ -45,11 +45,7 @@ pipeline {
             mkdir -p reports
 
             echo "Running OWASP Dependency Check"
-            
-            --scan ./ \
-            --out reports \
-            --format "ALL" \
-            --prettyPrint
+            which dependency-check.sh
         '''
     }
 }
