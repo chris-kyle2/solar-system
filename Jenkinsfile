@@ -6,6 +6,7 @@ pipeline {
     }
     tools {
         nodejs 'nodejs-22-6-0'
+        owaspDependencyCheck 'OWASP-10'
     }
     stages {
         stage('Print Node and Npm Version') {
@@ -38,18 +39,16 @@ pipeline {
                     }
                 }
 
-                stage('OWASP Dependency Check') {
-    steps {
-        sh '''
-            echo "Creating reports directory if it doesn't exist"
-            mkdir -p reports
-
-            echo "Running OWASP Dependency Check"
-            
-            dependency-check.sh --scan ./ --out reports --format "ALL" --prettyPrint
-        '''
-    }
-}
+stage('Owasp Dependency Check') {
+            steps {
+                sh '''
+                /opt/dependency-check/bin/dependency-check.sh --scan ./ \
+                    --out reports \
+                    --format ALL \
+                    --prettyPrint
+                '''
+            }
+        }
 
             }
     }
