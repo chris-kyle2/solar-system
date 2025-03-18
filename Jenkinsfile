@@ -42,9 +42,9 @@ pipeline {
                     steps {
                         sh '''
                             dependencyCheck additionalArguments: '''
-                            --scan ./ \\
-                            --out reports \\
-                            --format ALL \\
+                            --scan ./
+                            --out ./
+                            --format ALL
                             --prettyPrint''', nvdCredentialsId: 'NVD-API-KEY', odcInstallation: 'OWASP-10'
                         '''
                     }
