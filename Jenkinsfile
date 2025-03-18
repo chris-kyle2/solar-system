@@ -39,12 +39,21 @@ pipeline {
                 }
 
                 stage('OWASP Dependency Check') {
-                   steps {
-                        dependencyCheck additionalArguments: '--scan ./ --out reports --format "ALL" --prettyPrint', 
-                        nvdCredentialsId: 'NVD-API-KEY', 
-                        odcInstallation: 'OWASP-10'
-                    }
-                }
+    steps {
+        sh '''
+            echo "Creating reports directory if it doesn't exist"
+            mkdir -p reports
+
+            echo "Running OWASP Dependency Check"
+            
+            --scan ./ \
+            --out reports \
+            --format "ALL" \
+            --prettyPrint
+        '''
+    }
+}
+
             }
     }
  }
