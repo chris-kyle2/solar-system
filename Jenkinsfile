@@ -1,15 +1,15 @@
-pipeline{
+pipeline {
     agent {
-        node{
+        node {
             label 'slavenode'
         }
     }
-    tools{
+    tools {
         nodejs 'nodejs-22-6-0'
     }
-    stages{
-        stage('Print Node and Npm Version'){
-            steps{
+    stages {
+        stage('Print Node and Npm Version') {
+            steps {
                 sh '''
                     echo "running sample script"
                     echo "Node Version"
@@ -18,30 +18,38 @@ pipeline{
                     npm --version
                 '''
             }
-            
         }
-        stage("install dependencies"){
-                steps{
+
+        stage('Install Dependencies') {
+            steps {
                 sh 'npm install --no-audit'
             }
         }
-        parallel{
-        stage('NPM Dependency Audit'){
-            steps{
-                sh '''
-                npm audit --audit-level=critical
-                echo $?
-                '''
+
+        stage('Security Scans') {
+            parallel {
+                stage('NPM Dependency Audit') {
+                    steps {
+                        sh '''
+                            echo "Running NPM Audit"
+                            npm audit --audit-level=critical
+                        '''
+                    }
+                }
+
+                stage('OWASP Dependency Check') {
+                    steps {
+                        sh '''
+                            echo "Running OWASP Dependency Check"
+                            dependency-check.sh \
+                            --scan ./ \
+                            --out reports \
+                            --format ALL \
+                            --prettyPrint
+                        '''
+                    }
+                }
             }
-        }
-        stage('Owasp Dependency Check'){
-            steps{
-                dependencyCheck additionalArguments: '''--scan ./ \\
-                    --out reports \\
-                    --format ALL \\
-                    --prettyPrint''', nvdCredentialsId: 'NVD-API-KEY', odcInstallation: 'OWASP-10'
-            }
-        }
         }
     }
 }
