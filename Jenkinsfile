@@ -18,6 +18,10 @@ pipeline{
                     npm --version
                 '''
             }
+            stage("install dependencies"){
+                steps{
+                    sh 'npm install --no-audit'
+                }
         }
     }
 }
