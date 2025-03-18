@@ -4,6 +4,9 @@ pipeline{
             label 'slavenode'
         }
     }
+    tools{
+        nodeJS 'nodejs-22-6-0'
+    }
     stages{
         stage('Print Node and Npm Version'){
             steps{
