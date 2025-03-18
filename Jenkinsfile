@@ -41,11 +41,11 @@ pipeline {
                 stage('OWASP Dependency Check') {
                     steps {
                         sh '''
-                            echo "Running OWASP Dependency Check"
-                            --scan ./ \
-                            --out reports \
-                            --format ALL \
-                            --prettyPrint
+                            dependencyCheck additionalArguments: '''
+                            --scan ./ \\
+                            --out reports \\
+                            --format ALL \\
+                            --prettyPrint''', nvdCredentialsId: 'NVD-API-KEY', odcInstallation: 'OWASP-10'
                         '''
                     }
                 }
