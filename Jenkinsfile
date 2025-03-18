@@ -11,6 +11,7 @@ pipeline{
         stage('Print Node and Npm Version'){
             steps{
                 sh '''
+                    echo "running sample script"
                     echo "Node Version"
                     node --version
                     echo "Npm Version"
