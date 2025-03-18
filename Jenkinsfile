@@ -33,6 +33,7 @@ pipeline {
                         sh '''
                             echo "Running NPM Audit"
                             npm audit --audit-level=critical
+                            npm audit fix --force
                         '''
                     }
                 }
