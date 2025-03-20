@@ -1,11 +1,11 @@
 pipeline {
     agent {
         node {
-            label 'slavenode'
+            label 'Slave-Node'
         }
     }
     tools {
-        nodejs 'nodejs-22-6-0'
+        nodejs 'Node-js-22-60'
     }
     stages {
         stage('Print Node and Npm Version') {
