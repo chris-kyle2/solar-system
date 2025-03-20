@@ -49,7 +49,8 @@ pipeline {
                             --scan ./ \
                             --out dependency-check-report \
                             --format ALL \
-                            --prettyPrint
+                            --prettyPrint \
+                            --noupdate
                         '''
                     }
                 }
