@@ -29,6 +29,8 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
+                sh 'rm -rf node_modules package-lock.json'
+                sh 'npm install --no-optional'
                 sh 'npm install --no-audit'
             }
         }
