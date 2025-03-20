@@ -15,6 +15,8 @@ pipeline {
         MONGO_PASS = 'testpassword'
         MONGO_DB = 'testdb'
         MONGO_URI = "mongodb://testuser:testpassword@localhost:27017/testdb?authSource=admin"
+        DOCKER_IMAGE = 'solar-system-app'
+        DOCKER_TAG = "${BUILD_NUMBER}"
     }
     stages {
         stage('Print Node and Npm Version') {
@@ -51,6 +53,20 @@ pipeline {
                     echo "Checking MongoDB logs for errors..."
                     docker logs mongo-test || echo "MongoDB log check failed but continuing..."
                 '''
+            }
+        }
+
+        stage('Initialize MongoDB') {
+            steps {
+                script {
+                    sh '''
+                        echo "Updating MongoDB connection string in initDB.js"
+                        sed -i "s|mongodb://localhost:27017/testdb|mongodb://$MONGO_USER:$MONGO_PASS@localhost:27017/testdb?authSource=admin|g" initDB.js
+                        
+                        echo "Running database initialization script"
+                        node initDB.js
+                    '''
+                }
             }
         }
 
@@ -96,6 +112,45 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                script {
+                    sh """
+                        # Stop existing container if running
+                        docker stop ${DOCKER_IMAGE} || true
+                        docker rm ${DOCKER_IMAGE} || true
+
+                        # Create network if it doesn't exist
+                        docker network create solar-system-network || true
+
+                        # Connect MongoDB container to the network
+                        docker network connect solar-system-network mongo-test || true
+
+                        # Run new container
+                        docker run -d \
+                            --name ${DOCKER_IMAGE} \
+                            --network solar-system-network \
+                            -p 3000:3000 \
+                            -e MONGO_URI="mongodb://${MONGO_USER}:${MONGO_PASS}@mongo-test:27017/${MONGO_DB}?authSource=admin" \
+                            -e MONGO_USERNAME="${MONGO_USER}" \
+                            -e MONGO_PASSWORD="${MONGO_PASS}" \
+                            ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    """
+                }
+            }
+        }
+
         stage('Cleanup MongoDB') {
             steps {
                 sh '''
@@ -108,10 +163,21 @@ pipeline {
     }
     post {
         always {
+            script {
+                // Cleanup Docker images and network
+                sh """
+                    docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+                    docker rmi ${DOCKER_IMAGE}:latest || true
+                    docker network rm solar-system-network || true
+                """
+            }
             archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
         }
         failure {
             echo "Pipeline failed. Check logs for details."
+        }
+        success {
+            echo "Pipeline completed successfully!"
         }
     }
 }

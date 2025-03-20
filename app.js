@@ -44,14 +44,19 @@ const dataSchema = new Schema({
 const planetModel = mongoose.model('planets', dataSchema);
 
 app.post('/planet', async function(req, res) {
+    const planetId = req.body.id;
+    console.log(`[${new Date().toISOString()}] Fetching planet with ID: ${planetId}`);
+    
     try {
-        const planetData = await planetModel.findOne({ id: req.body.id });
+        const planetData = await planetModel.findOne({ id: planetId });
         if (!planetData) {
+            console.log(`[${new Date().toISOString()}] Planet with ID ${planetId} not found`);
             return res.status(404).send({ error: "Planet not found" });
         }
+        console.log(`[${new Date().toISOString()}] Successfully fetched planet: ${planetData.name}`);
         res.send(planetData);
     } catch (err) {
-        console.error("Error fetching planet data:", err);
+        console.error(`[${new Date().toISOString()}] Error fetching planet ${planetId}:`, err);
         res.status(500).send({ error: "Server error" });
     }
 });
