@@ -17,6 +17,7 @@ pipeline {
         MONGO_URI = "mongodb://testuser:testpassword@localhost:27017/testdb?authSource=admin"
         DOCKER_IMAGE = 'solar-system-app'
         DOCKER_TAG = "${BUILD_NUMBER}"
+        EC2_PUBLIC_IP = sh(script: 'curl -s http://169.254.169.254/latest/meta-data/public-ipv4', returnStdout: true).trim()
     }
     stages {
         stage('Cleanup Previous Containers') {
@@ -166,6 +167,39 @@ pipeline {
                             ${DOCKER_IMAGE}:${DOCKER_TAG}
                     """
                 }
+            }
+        }
+
+        stage('Application Health Check') {
+            steps {
+                script {
+                    sh '''
+                        echo "Waiting for application to start..."
+                        sleep 10
+
+                        echo "Checking application health..."
+                        curl -f http://localhost:3000/live || exit 1
+                        curl -f http://localhost:3000/ready || exit 1
+                        
+                        echo "============================================="
+                        echo "Application is running!"
+                        echo "Access the application at: http://${EC2_PUBLIC_IP}:3000"
+                        echo "============================================="
+                        echo "To proceed with cleanup, manually approve the next stage"
+                    '''
+                }
+            }
+        }
+
+        stage('Manual Verification') {
+            steps {
+                input message: """
+                    Application is running!
+                    
+                    Access URL: http://${EC2_PUBLIC_IP}:3000
+                    
+                    Please verify the application and click 'Proceed' when ready to cleanup resources.
+                    """
             }
         }
     }
