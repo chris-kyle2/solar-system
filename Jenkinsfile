@@ -38,14 +38,17 @@ pipeline {
 
                 stage('OWASP Dependency Check') {
                     steps {
-                        sh '''
+                          sh '''
                             echo "Running OWASP Dependency Check"
-                            mkdir -p reports
-                            /opt/dependency-check/bin/dependency-check.sh --scan ./ \
-                                --out reports \
-                                --format ALL \
-                                --prettyPrint
-                        '''
+                            mkdir -p dependency-check-report
+                            '''
+                            dependencyCheck additionalArguments: '''
+                            --scan ./ \
+                            --out ./dependency-check-report \
+                            --format ALL \
+                            --prettyPrint ''', odcInstallation: 'OWASP-DepCheck-10'
+    
+                        
                     }
                 }
             }
