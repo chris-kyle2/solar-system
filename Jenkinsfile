@@ -1,7 +1,7 @@
 pipeline {
     agent {
         node {
-            label 'Slave-Node'  // Replace with your actual slave label
+            label 'Slave-Node'  
         }
     }
     tools {
@@ -19,6 +19,29 @@ pipeline {
         DOCKER_TAG = "${BUILD_NUMBER}"
     }
     stages {
+        stage('Cleanup Previous Containers') {
+            steps {
+                script {
+                    sh '''
+                        echo "Cleaning up previous containers..."
+                        
+                        # Stop and remove MongoDB container if exists
+                        docker stop mongo-test || true
+                        docker rm mongo-test || true
+                        
+                        # Stop and remove application container if exists
+                        docker stop ${DOCKER_IMAGE} || true
+                        docker rm ${DOCKER_IMAGE} || true
+                        
+                        # Remove network if exists
+                        docker network rm solar-system-network || true
+                        
+                        echo "Cleanup completed"
+                    '''
+                }
+            }
+        }
+
         stage('Print Node and Npm Version') {
             steps {
                 sh '''
@@ -106,7 +129,7 @@ pipeline {
             steps {
                 sh '''
                     echo "Running Unit Tests..."
-                    npm test 
+                    npm test
                 '''
             }
         }
@@ -126,10 +149,6 @@ pipeline {
             steps {
                 script {
                     sh """
-                        # Stop existing container if running
-                        docker stop ${DOCKER_IMAGE} || true
-                        docker rm ${DOCKER_IMAGE} || true
-
                         # Create network if it doesn't exist
                         docker network create solar-system-network || true
 
@@ -149,31 +168,30 @@ pipeline {
                 }
             }
         }
-
-        stage('Cleanup MongoDB') {
-            steps {
-                sh '''
-                    echo "Stopping and Removing MongoDB Container"
-                    docker stop mongo-test
-                    docker rm mongo-test
-                '''
-            }
-        }
     }
     post {
         always {
             script {
-                // Cleanup Docker images and network
-                sh """
+                echo "Cleaning up resources..."
+                sh '''
+                    # Stop and remove containers
+                    docker stop mongo-test || true
+                    docker rm mongo-test || true
+                    docker stop ${DOCKER_IMAGE} || true
+                    docker rm ${DOCKER_IMAGE} || true
+                    
+                    # Remove images
                     docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
                     docker rmi ${DOCKER_IMAGE}:latest || true
+                    
+                    # Remove network
                     docker network rm solar-system-network || true
-                """
+                '''
             }
             archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
         }
         failure {
-            echo "Pipeline failed. Check logs for details."
+            echo "Pipeline failed. All resources have been cleaned up."
         }
         success {
             echo "Pipeline completed successfully!"
