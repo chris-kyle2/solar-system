@@ -7,6 +7,9 @@ pipeline {
     tools {
         nodejs 'Node-js-22-60'
     }
+    options {
+                timestamps()
+            }
     stages {
         stage('Print Node and Npm Version') {
             steps {
@@ -38,9 +41,7 @@ pipeline {
 
                 stage('OWASP Dependency Check') {
                     steps {
-                        options {
-                            timestamps()
-                        }
+                        
                         echo "Running OWASP Dependency Check"
                         sh 'mkdir -p dependency-check-report'
 
