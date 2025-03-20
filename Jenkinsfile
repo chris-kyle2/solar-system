@@ -38,6 +38,9 @@ pipeline {
 
                 stage('OWASP Dependency Check') {
                     steps {
+                        options {
+                            timestamps()
+                        }
                         echo "Running OWASP Dependency Check"
                         sh 'mkdir -p dependency-check-report'
 
