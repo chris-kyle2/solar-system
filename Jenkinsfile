@@ -17,7 +17,7 @@ pipeline {
         MONGO_URI = "mongodb://testuser:testpassword@localhost:27017/testdb?authSource=admin"
         DOCKER_IMAGE = 'solar-system-app'
         DOCKER_TAG = "${BUILD_NUMBER}"
-        EC2_PUBLIC_IP = sh(script: 'curl -s http://169.254.169.254/latest/meta-data/public-ipv4', returnStdout: true).trim()
+        EC2_PUBLIC_IP = '34.201.29.244'
     }
     stages {
         stage('Cleanup Previous Containers') {
