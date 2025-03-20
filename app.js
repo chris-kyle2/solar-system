@@ -38,19 +38,19 @@ var planetModel = mongoose.model('planets', dataSchema);
 
 
 
-app.post('/planet', async function (req, res) {
+app.post('/planet', async function(req, res) {
     try {
         const planetData = await planetModel.findOne({ id: req.body.id });
-
         if (!planetData) {
-            return res.status(404).send("Ooops, We only have 9 planets and a sun. Select a number from 0 - 9");
+            return res.status(404).send({ error: "Planet not found" });
         }
-
         res.send(planetData);
     } catch (err) {
-        res.status(500).send("Error in Planet Data: " + err.message);
+        console.error("Error fetching planet data:", err);
+        res.status(500).send({ error: "Server error" });
     }
 });
+
 
 
 app.get('/',   async (req, res) => {
