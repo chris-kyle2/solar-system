@@ -89,7 +89,7 @@ pipeline {
             steps {
                 sh '''
                     echo "Running Unit Tests..."
-                    npm test || (echo "Tests failed!" && exit 1)
+                    npm test 
                 '''
             }
         }
