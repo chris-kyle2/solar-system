@@ -38,17 +38,19 @@ pipeline {
 
                 stage('OWASP Dependency Check') {
                     steps {
-                          sh '''
-                            echo "Running OWASP Dependency Check"
-                            mkdir -p dependency-check-report
-                            '''
-                            dependencyCheck additionalArguments: '''
+                        echo "Running OWASP Dependency Check"
+                        sh 'mkdir -p dependency-check-report'
+
+                        // Ensure script has correct permissions before execution
+                        sh 'chmod +x /var/lib/jenkins/tools/bin/dependency-check.sh'
+
+                        sh '''
+                            /var/lib/jenkins/tools/bin/dependency-check.sh \
                             --scan ./ \
-                            --out ./dependency-check-report \
+                            --out dependency-check-report \
                             --format ALL \
-                            --prettyPrint ''', odcInstallation: 'OWASP-DepCheck-10'
-    
-                        
+                            --prettyPrint
+                        '''
                     }
                 }
             }
