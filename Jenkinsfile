@@ -168,7 +168,7 @@ pipeline {
                     sshagent(['integration-testing-ec2-pvt-key']) {
                         sh """
                             echo "Deploying application to EC2..."
-                            ssh -tt -o StrictHostKeyChecking=no jenkins@$54.90.82.189 << 'EOF'
+                            ssh -tt -o StrictHostKeyChecking=no ubuntu@$54.90.82.189 << 'EOF'
                                 echo "Starting MongoDB on EC2..."
                                 docker run -d --name mongo-test -p 27017:27017 \\
                                     -e MONGO_INITDB_ROOT_USERNAME=${MONGO_USER} \\
