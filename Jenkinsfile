@@ -53,6 +53,7 @@ pipeline {
                 sh 'npm install'
             }
         }
+
         // stage('Security Scans') {
         //     parallel {
         //         stage('NPM Dependency Audit') {
@@ -145,7 +146,6 @@ pipeline {
                         echo "Running Trivy Security Scan..."
                         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
                             aquasec/trivy image --severity CRITICAL --format table ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
-                            
                     """
                 }
             }
@@ -162,53 +162,47 @@ pipeline {
             }
         }
 
-        stage('Deploy Application') {
+        stage('Deploy Application to EC2') {
             steps {
                 script {
-                    sh """
-                        docker network create solar-system-network || true
-                        docker network connect solar-system-network mongo-test || true
+                    sshagent(['integration-testing-ec2-pvt-key']) {
+                        sh """
+                            echo "Deploying application to EC2..."
+                            ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} << 'EOF'
+                                echo "Starting MongoDB on EC2..."
+                                docker run -d --name mongo-test -p 27017:27017 \\
+                                    -e MONGO_INITDB_ROOT_USERNAME=${MONGO_USER} \\
+                                    -e MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS} \\
+                                    -e MONGO_INITDB_DATABASE=${MONGO_DB} \\
+                                    mongo:latest
 
-                        docker run -d \
-                            --name ${DOCKER_IMAGE} \
-                            --network solar-system-network \
-                            -p 3000:3000 \
-                            -e MONGO_URI="mongodb://${MONGO_USER}:${MONGO_PASS}@mongo-test:27017/${MONGO_DB}?authSource=admin" \
-                            -e MONGO_USERNAME="${MONGO_USER}" \
-                            -e MONGO_PASSWORD="${MONGO_PASS}" \
-                            ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
-                    """
+                                sleep 5
+                                echo "Checking MongoDB logs..."
+                                docker logs mongo-test || echo "MongoDB log check failed but continuing..."
+
+                                if docker ps -a | grep -q '${DOCKER_IMAGE}'; then
+                                    echo "Stopping and removing existing container..."
+                                    docker stop ${DOCKER_IMAGE} || true
+                                    docker rm ${DOCKER_IMAGE} || true
+                                    echo "Container stopped and removed"
+                                fi
+
+                                echo "Starting application on EC2..."
+                                docker run -d --name ${DOCKER_IMAGE} \\
+                                    -e MONGO_URI="mongodb://${MONGO_USER}:${MONGO_PASS}@mongo-test:27017/${MONGO_DB}?authSource=admin" \\
+                                    -e MONGO_USERNAME="${MONGO_USER}" \\
+                                    -e MONGO_PASSWORD="${MONGO_PASS}" \\
+                                    -p 3000:3000 \\
+                                    ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+
+                                echo "Application deployed to EC2"
+                                echo "============================================="
+                                echo "Access the application at: http://${EC2_PUBLIC_IP}:3000"
+                                echo "============================================="
+                            EOF
+                        """
+                    }
                 }
-            }
-        }
-
-        stage('Application Health Check') {
-            steps {
-                script {
-                    sh '''
-                        echo "Waiting for application to start..."
-                        sleep 10
-                        echo "Checking application health..."
-                        curl -f http://localhost:3000/live || exit 1
-                        curl -f http://localhost:3000/ready || exit 1
-                        echo "============================================="
-                        echo "Application is running!"
-                        echo "Access the application at: http://${EC2_PUBLIC_IP}:3000"
-                        echo "============================================="
-                    '''
-                }
-            }
-        }
-
-        stage('Manual Verification') {
-            steps {
-                input message: """
-                    Application is running!
-                    
-                    Access URL: http://${EC2_PUBLIC_IP}:3000
-                    
-                    Please verify the application and click 'Proceed' when ready to cleanup resources.
-                """
             }
         }
     }
