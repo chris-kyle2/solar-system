@@ -16,7 +16,6 @@ pipeline {
         MONGO_DB = 'testdb'
         MONGO_URI = "mongodb://testuser:testpassword@localhost:27017/testdb?authSource=admin"
         DOCKER_IMAGE = 'solar-system-app'
-        DOCKER_TAG = "${BUILD_NUMBER}"
         DOCKER_USERNAME = '22monk'
         DOCKER_PASSWORD = '91cqwerty12345@'
         EC2_PUBLIC_IP = '34.201.29.244'
@@ -164,7 +163,7 @@ pipeline {
 
                         # Run new container
                         docker run -d \
-                            --name ${DOCKER_IMAGE} \
+                            --name ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} \
                             --network solar-system-network \
                             -p 3000:3000 \
                             -e MONGO_URI="mongodb://${MONGO_USER}:${MONGO_PASS}@mongo-test:27017/${MONGO_DB}?authSource=admin" \
@@ -217,12 +216,11 @@ pipeline {
                     # Stop and remove containers
                     docker stop mongo-test || true
                     docker rm mongo-test || true
-                    docker stop ${DOCKER_IMAGE} || true
-                    docker rm ${DOCKER_IMAGE} || true
+                    docker stop ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} || true
+                    docker rm ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} || true
                     
                     # Remove images
-                    docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
-                    docker rmi ${DOCKER_IMAGE}:latest || true
+                    docker rmi ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} || true
                     
                     # Remove network
                     docker network rm solar-system-network || true
