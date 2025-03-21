@@ -59,6 +59,38 @@ pipeline {
                 sh 'npm install'
             }
         }
+        // stage('Security Scans') {
+        //     parallel {
+        //         stage('NPM Dependency Audit') {
+        //             steps {
+        //                 sh '''
+        //                     echo "Running NPM Audit"
+        //                     npm audit --audit-level=critical || echo "Audit failed but continuing..."
+        //                     npm audit fix --force || echo "Fix failed but continuing..."
+        //                 '''
+        //             }
+        //         }
+
+        //         stage('OWASP Dependency Check') {
+        //             steps {
+        //                 echo "Running OWASP Dependency Check"
+        //                 sh 'mkdir -p dependency-check-report'
+
+        //                 // Ensure script has correct permissions before execution
+        //                 sh 'chmod +x /var/lib/jenkins/tools/bin/dependency-check.sh'
+
+        //                 sh '''
+        //                     /var/lib/jenkins/tools/bin/dependency-check.sh \
+        //                     --scan ./ \
+        //                     --out dependency-check-report \
+        //                     --format ALL \
+        //                     --prettyPrint \
+        //                     --noupdate || echo "Dependency check failed but continuing..."
+        //                 '''
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Start MongoDB in Docker') {
             steps {
@@ -93,44 +125,23 @@ pipeline {
             }
         }
 
-        // stage('Security Scans') {
-        //     parallel {
-        //         stage('NPM Dependency Audit') {
-        //             steps {
-        //                 sh '''
-        //                     echo "Running NPM Audit"
-        //                     npm audit --audit-level=critical || echo "Audit failed but continuing..."
-        //                     npm audit fix --force || echo "Fix failed but continuing..."
-        //                 '''
-        //             }
-        //         }
 
-        //         stage('OWASP Dependency Check') {
-        //             steps {
-        //                 echo "Running OWASP Dependency Check"
-        //                 sh 'mkdir -p dependency-check-report'
-
-        //                 // Ensure script has correct permissions before execution
-        //                 sh 'chmod +x /var/lib/jenkins/tools/bin/dependency-check.sh'
-
-        //                 sh '''
-        //                     /var/lib/jenkins/tools/bin/dependency-check.sh \
-        //                     --scan ./ \
-        //                     --out dependency-check-report \
-        //                     --format ALL \
-        //                     --prettyPrint \
-        //                     --noupdate || echo "Dependency check failed but continuing..."
-        //                 '''
-        //             }
-        //         }
-        //     }
-        // }
+        
 
         stage('Unit Testing') {
             steps {
                 sh '''
                     echo "Running Unit Tests..."
                     npm test
+                '''
+            }
+        }
+
+        stage('Code Coverage-SonarQube') {  
+            steps {
+                sh '''
+                    echo "Running SonarQube Analysis..."
+                    npm run coverage
                 '''
             }
         }
