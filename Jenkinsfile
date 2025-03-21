@@ -26,18 +26,11 @@ pipeline {
                 script {
                     sh '''
                         echo "Cleaning up previous containers..."
-                        
-                        # Stop and remove MongoDB container if exists
                         docker stop mongo-test || true
                         docker rm mongo-test || true
-                        
-                        # Stop and remove application container if exists
                         docker stop ${DOCKER_IMAGE} || true
                         docker rm ${DOCKER_IMAGE} || true
-                        
-                        # Remove network if exists
                         docker network rm solar-system-network || true
-                        
                         echo "Cleanup completed"
                     '''
                 }
@@ -104,7 +97,7 @@ pipeline {
                         mongo:latest
                     
                     echo "Waiting for MongoDB to be ready..."
-                    sleep 5  # Ensure MongoDB is up
+                    sleep 5
 
                     echo "Checking MongoDB logs for errors..."
                     docker logs mongo-test || echo "MongoDB log check failed but continuing..."
@@ -118,16 +111,12 @@ pipeline {
                     sh '''
                         echo "Updating MongoDB connection string in initDB.js"
                         sed -i "s|mongodb://localhost:27017/testdb|mongodb://$MONGO_USER:$MONGO_PASS@localhost:27017/testdb?authSource=admin|g" initDB.js
-                        
                         echo "Running database initialization script"
                         node initDB.js
                     '''
                 }
             }
         }
-
-
-        
 
         stage('Unit Testing') {
             steps {
@@ -138,12 +127,34 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image and Push to Docker Hub') {
+        stage('Build Docker Image') {
             steps {
                 script {
                     sh """
                         docker build -t ${DOCKER_IMAGE} .
-                        docker tag ${DOCKER_IMAGE}  ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+                        docker tag ${DOCKER_IMAGE} ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+                    """
+                }
+            }
+        }
+
+        stage('Trivy Security Scan') {
+            steps {
+                script {
+                    sh """
+                        echo "Running Trivy Security Scan..."
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                            aquasecurity/trivy image --exit-code 1 --severity CRITICAL \
+                            ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} || exit 1
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    sh """
                         docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
                         docker push ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
                     """
@@ -155,13 +166,9 @@ pipeline {
             steps {
                 script {
                     sh """
-                        # Create network if it doesn't exist
                         docker network create solar-system-network || true
-
-                        # Connect MongoDB container to the network
                         docker network connect solar-system-network mongo-test || true
 
-                        # Run new container
                         docker run -d \
                             --name ${DOCKER_IMAGE} \
                             --network solar-system-network \
@@ -181,16 +188,13 @@ pipeline {
                     sh '''
                         echo "Waiting for application to start..."
                         sleep 10
-
                         echo "Checking application health..."
                         curl -f http://localhost:3000/live || exit 1
                         curl -f http://localhost:3000/ready || exit 1
-                        
                         echo "============================================="
                         echo "Application is running!"
                         echo "Access the application at: http://${EC2_PUBLIC_IP}:3000"
                         echo "============================================="
-                        echo "To proceed with cleanup, manually approve the next stage"
                     '''
                 }
             }
@@ -204,7 +208,7 @@ pipeline {
                     Access URL: http://${EC2_PUBLIC_IP}:3000
                     
                     Please verify the application and click 'Proceed' when ready to cleanup resources.
-                    """
+                """
             }
         }
     }
@@ -213,16 +217,11 @@ pipeline {
             script {
                 echo "Cleaning up resources..."
                 sh '''
-                    # Stop and remove containers
                     docker stop mongo-test || true
                     docker rm mongo-test || true
-                    docker stop ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} || true
-                    docker rm ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} || true
-                    
-                    # Remove images
+                    docker stop ${DOCKER_IMAGE} || true
+                    docker rm ${DOCKER_IMAGE} || true
                     docker rmi ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} || true
-                    
-                    # Remove network
                     docker network rm solar-system-network || true
                 '''
             }
