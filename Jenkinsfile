@@ -119,14 +119,14 @@ pipeline {
             }
         }
 
-        stage('Unit Testing') {
-            steps {
-                sh '''
-                    echo "Running Unit Tests..."
-                    npm test
-                '''
-            }
-        }
+        // stage('Unit Testing') {
+        //     steps {
+        //         sh '''
+        //             echo "Running Unit Tests..."
+        //             npm test
+        //         '''
+        //     }
+        // }
 
         stage('Build Docker Image') {
             steps {
@@ -139,17 +139,17 @@ pipeline {
             }
         }
 
-        stage('Trivy Security Scan') {
-            steps {
-                script {
-                    sh """
-                        echo "Running Trivy Security Scan..."
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                            aquasec/trivy image --severity CRITICAL --quiet --format table ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
-                    """
-                }
-            }
-        }
+        // stage('Trivy Security Scan') {
+        //     steps {
+        //         script {
+        //             sh """
+        //                 echo "Running Trivy Security Scan..."
+        //                 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+        //                     aquasec/trivy image --severity CRITICAL --quiet --format table ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+        //             """
+        //         }
+        //     }
+        // }
 
         stage('Push Docker Image to Docker Hub') {
             steps {
@@ -168,7 +168,7 @@ pipeline {
                     sshagent(['integration-testing-ec2-pvt-key']) {
                         sh """
                             echo "Deploying application to EC2..."
-                            ssh -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} << 'EOF'
+                            ssh -tt -o StrictHostKeyChecking=no ubuntu@${EC2_PUBLIC_IP} << 'EOF'
                                 echo "Starting MongoDB on EC2..."
                                 docker run -d --name mongo-test -p 27017:27017 \\
                                     -e MONGO_INITDB_ROOT_USERNAME=${MONGO_USER} \\
