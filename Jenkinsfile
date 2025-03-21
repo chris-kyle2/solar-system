@@ -163,7 +163,7 @@ pipeline {
 
                         # Run new container
                         docker run -d \
-                            --name ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} \
+                            --name ${DOCKER_IMAGE} \
                             --network solar-system-network \
                             -p 3000:3000 \
                             -e MONGO_URI="mongodb://${MONGO_USER}:${MONGO_PASS}@mongo-test:27017/${MONGO_DB}?authSource=admin" \
