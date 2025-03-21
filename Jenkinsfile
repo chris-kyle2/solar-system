@@ -53,7 +53,6 @@ pipeline {
                 sh 'npm install'
             }
         }
-
         // stage('Security Scans') {
         //     parallel {
         //         stage('NPM Dependency Audit') {
@@ -145,7 +144,8 @@ pipeline {
         //             sh """
         //                 echo "Running Trivy Security Scan..."
         //                 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-        //                     aquasec/trivy image --severity CRITICAL --quiet --format table ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+        //                     aquasec/trivy image --severity CRITICAL --format table ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+                            
         //             """
         //         }
         //     }
@@ -161,6 +161,57 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy Application') {
+            steps {
+                script {
+                    sh """
+                        docker network create solar-system-network || true
+                        docker network connect solar-system-network mongo-test || true
+
+                        docker run -d \
+                            --name ${DOCKER_IMAGE} \
+                            --network solar-system-network \
+                            -p 3000:3000 \
+                            -e MONGO_URI="mongodb://${MONGO_USER}:${MONGO_PASS}@mongo-test:27017/${MONGO_DB}?authSource=admin" \
+                            -e MONGO_USERNAME="${MONGO_USER}" \
+                            -e MONGO_PASSWORD="${MONGO_PASS}" \
+                            ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+                    """
+                }
+            }
+        }
+
+        stage('Application Health Check') {
+            steps {
+                script {
+                    sh '''
+                        echo "Waiting for application to start..."
+                        sleep 10
+                        echo "Checking application health..."
+                        curl -f http://localhost:3000/live || exit 1
+                        curl -f http://localhost:3000/ready || exit 1
+                        echo "============================================="
+                        echo "Application is running!"
+                        echo "Access the application at: http://${EC2_PUBLIC_IP}:3000"
+                        echo "============================================="
+                    '''
+                }
+            }
+        }
+
+        stage('Manual Verification') {
+            steps {
+                input message: """
+                    Application is running!
+                    
+                    Access URL: http://${EC2_PUBLIC_IP}:3000
+                    
+                    Please verify the application and click 'Proceed' when ready to cleanup resources.
+                """
+            }
+        }
+        
     }
     post {
         always {
