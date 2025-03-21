@@ -17,6 +17,8 @@ pipeline {
         MONGO_URI = "mongodb://testuser:testpassword@localhost:27017/testdb?authSource=admin"
         DOCKER_IMAGE = 'solar-system-app'
         DOCKER_TAG = "${BUILD_NUMBER}"
+        DOCKER_USERNAME = '22monk'
+        DOCKER_PASSWORD = '91cqwerty12345@'
         EC2_PUBLIC_IP = '34.201.29.244'
     }
     stages {
@@ -137,21 +139,14 @@ pipeline {
             }
         }
 
-        stage('Code Coverage-SonarQube') {  
-            steps {
-                sh '''
-                    echo "Running SonarQube Analysis..."
-                    npm run coverage
-                '''
-            }
-        }
-
-        stage('Build Docker Image') {
+        stage('Build Docker Image and Push to Docker Hub') {
             steps {
                 script {
                     sh """
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                        docker build -t ${DOCKER_IMAGE} .
+                        docker tag ${DOCKER_IMAGE}  ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+                        docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                        docker push ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
                     """
                 }
             }
