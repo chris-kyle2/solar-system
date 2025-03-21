@@ -170,7 +170,7 @@ pipeline {
                             -e MONGO_URI="mongodb://${MONGO_USER}:${MONGO_PASS}@mongo-test:27017/${MONGO_DB}?authSource=admin" \
                             -e MONGO_USERNAME="${MONGO_USER}" \
                             -e MONGO_PASSWORD="${MONGO_PASS}" \
-                            ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
                     """
                 }
             }
