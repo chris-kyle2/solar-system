@@ -161,50 +161,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Deploy Application to EC2') {
-            steps {
-                script {
-                    sshagent(['integration-testing-ec2-pvt-key']) {
-                        sh """
-                            echo "Deploying application to EC2..."
-                            ssh -tt -o StrictHostKeyChecking=no ubuntu@54.90.82.189 << 'EOF'
-                                echo "Starting MongoDB on EC2..."
-                                docker run -d --name mongo-test -p 27017:27017 \\
-                                    -e MONGO_INITDB_ROOT_USERNAME=${MONGO_USER} \\
-                                    -e MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS} \\
-                                    -e MONGO_INITDB_DATABASE=${MONGO_DB} \\
-                                    mongo:latest
-
-                                sleep 5
-                                echo "Checking MongoDB logs..."
-                                docker logs mongo-test || echo "MongoDB log check failed but continuing..."
-
-                                if docker ps -a | grep -q '${DOCKER_IMAGE}'; then
-                                    echo "Stopping and removing existing container..."
-                                    docker stop ${DOCKER_IMAGE} || true
-                                    docker rm ${DOCKER_IMAGE} || true
-                                    echo "Container stopped and removed"
-                                fi
-
-                                echo "Starting application on EC2..."
-                                docker run -d --name ${DOCKER_IMAGE} \\
-                                    -e MONGO_URI="mongodb://${MONGO_USER}:${MONGO_PASS}@mongo-test:27017/${MONGO_DB}?authSource=admin" \\
-                                    -e MONGO_USERNAME="${MONGO_USER}" \\
-                                    -e MONGO_PASSWORD="${MONGO_PASS}" \\
-                                    -p 3000:3000 \\
-                                    ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
-
-                                echo "Application deployed to EC2"
-                                echo "============================================="
-                                echo "Access the application at: http://${EC2_PUBLIC_IP}:3000"
-                                echo "============================================="
-                            EOF
-                        """
-                    }
-                }
-            }
-        }
     }
     post {
         always {
