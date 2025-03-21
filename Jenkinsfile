@@ -144,7 +144,9 @@ pipeline {
                     sh """
                         echo "Running Trivy Security Scan..."
                         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                            aquasecurity/trivy image --exit-code 1 --severity CRITICAL \
+                            aquasec/trivy \
+                            --exit-code 1 \
+                            --severity CRITICAL \
                             ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT} || exit 1
                     """
                 }
