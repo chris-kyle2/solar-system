@@ -18,7 +18,7 @@ spec:
           image: busybox
           command: ['sh', '-c', 'until nc -z mongodb-service 27017; do echo waiting for MongoDB; sleep 5; done;']
         - name: init-db
-          image: 22monk/solar-system:da34318b63436c9cf9fb5d6a4bb9eb9bc069b216
+          image: 22monk/solar-system-app:dd4431d417b6e6017a472a6450b5ab8057facd3b
           command: ["node", "/usr/app/initDB.js"]
           env:
             - name: MONGO_URI
