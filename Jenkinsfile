@@ -54,38 +54,38 @@ pipeline {
                 sh 'npm install'
             }
         }
-        // stage('Security Scans') {
-        //     parallel {
-        //         stage('NPM Dependency Audit') {
-        //             steps {
-        //                 sh '''
-        //                     echo "Running NPM Audit"
-        //                     npm audit --audit-level=critical || echo "Audit failed but continuing..."
-        //                     npm audit fix --force || echo "Fix failed but continuing..."
-        //                 '''
-        //             }
-        //         }
+        stage('Security Scans') {
+            parallel {
+                stage('NPM Dependency Audit') {
+                    steps {
+                        sh '''
+                            echo "Running NPM Audit"
+                            npm audit --audit-level=critical || echo "Audit failed but continuing..."
+                            npm audit fix --force || echo "Fix failed but continuing..."
+                        '''
+                    }
+                }
 
-        //         stage('OWASP Dependency Check') {
-        //             steps {
-        //                 echo "Running OWASP Dependency Check"
-        //                 sh 'mkdir -p dependency-check-report'
+                stage('OWASP Dependency Check') {
+                    steps {
+                        echo "Running OWASP Dependency Check"
+                        sh 'mkdir -p dependency-check-report'
 
-        //                 // Ensure script has correct permissions before execution
-        //                 sh 'chmod +x /var/lib/jenkins/tools/bin/dependency-check.sh'
+                        // Please Ensure that script has correct permissions before execution
+                        sh 'chmod +x /var/lib/jenkins/tools/bin/dependency-check.sh'
 
-        //                 sh '''
-        //                     /var/lib/jenkins/tools/bin/dependency-check.sh \
-        //                     --scan ./ \
-        //                     --out dependency-check-report \
-        //                     --format ALL \
-        //                     --prettyPrint \
-        //                     --noupdate || echo "Dependency check failed but continuing..."
-        //                 '''
-        //             }
-        //         }
-        //     }
-        // }
+                        sh '''
+                            /var/lib/jenkins/tools/bin/dependency-check.sh \
+                            --scan ./ \
+                            --out dependency-check-report \
+                            --format ALL \
+                            --prettyPrint \
+                            --noupdate || echo "Dependency check failed but continuing..."
+                        '''
+                    }
+                }
+            }
+        }
 
         stage('Start MongoDB in Docker') {
             steps {
@@ -119,14 +119,14 @@ pipeline {
             }
         }
 
-        // stage('Unit Testing') {
-        //     steps {
-        //         sh '''
-        //             echo "Running Unit Tests..."
-        //             npm test
-        //         '''
-        //     }
-        // }
+        stage('Unit Testing') {
+            steps {
+                sh '''
+                    echo "Running Unit Tests..."
+                    npm test
+                '''
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -139,18 +139,18 @@ pipeline {
             }
         }
 
-        // stage('Trivy Security Scan') {
-        //     steps {
-        //         script {
-        //             sh """
-        //                 echo "Running Trivy Security Scan..."
-        //                 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-        //                     aquasec/trivy image --severity CRITICAL --format table ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
+        stage('Trivy Security Scan') {
+            steps {
+                script {
+                    sh """
+                        echo "Running Trivy Security Scan..."
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                            aquasec/trivy image --severity CRITICAL --format table ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}
                             
-        //             """
-        //         }
-        //     }
-        // }
+                    """
+                }
+            }
+        }
 
         stage('Push Docker Image to Docker Hub') {
             steps {
