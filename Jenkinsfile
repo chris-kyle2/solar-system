@@ -211,6 +211,20 @@ pipeline {
                 """
             }
         }
+        stage('Update Kubernetes Manifest') {
+            steps {
+                script {
+                    sh """
+                        sed -i 's|image: ${DOCKER_USERNAME}/${DOCKER_IMAGE}:.*|image: ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}|' ${K8S_MANIFEST}
+                        git config --global user.email "jenkins@example.com"
+                        git config --global user.name "Jenkins CI"
+                        git add ${K8S_MANIFEST}
+                        git commit -m "Update Kubernetes deployment to image ${GIT_COMMIT}"
+                        git push origin main
+                    """
+                }
+            }
+        }
         
     }
     post {
