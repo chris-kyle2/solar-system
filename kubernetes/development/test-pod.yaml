@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: aws-cli-test
+  namespace: solar-system
+spec:
+  serviceAccountName: external-secrets
+  containers:
+    - name: aws-cli
+      image: amazon/aws-cli
+      command: ["sleep", "3600"]
