@@ -19,6 +19,7 @@ pipeline {
         DOCKER_USERNAME = '22monk'
         DOCKER_PASSWORD = '91cqwerty12345@'
         EC2_PUBLIC_IP = '34.201.29.244'
+        K8S_MANIFEST = 'kubernetes/development/node-app-deployment.yaml'
     }
     stages {
         stage('Cleanup Previous Containers') {
