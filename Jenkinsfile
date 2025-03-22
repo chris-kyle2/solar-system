@@ -216,13 +216,15 @@ pipeline {
             steps {
                 script {
                     sh """
+                        git checkout main || git checkout -b main  # Ensure we're on main
                         sed -i 's|image: ${DOCKER_USERNAME}/${DOCKER_IMAGE}:.*|image: ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}|' ${K8S_MANIFEST}
                         git config --global user.email "jenkins@example.com"
                         git config --global user.name "Jenkins CI"
                         git add ${K8S_MANIFEST}
                         git commit -m "Update Kubernetes deployment to image ${GIT_COMMIT}"
                         git push origin main
-                    """
+                """
+
                 }
             }
         }
