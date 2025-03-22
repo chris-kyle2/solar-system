@@ -30,7 +30,7 @@ spec:
                   key: MONGO_URI
       containers:
         - name: node-app
-          image: 22monk/solar-system:da34318b63436c9cf9fb5d6a4bb9eb9bc069b216
+          image: 22monk/solar-system-app:dd4431d417b6e6017a472a6450b5ab8057facd3b
           ports:
             - containerPort: 3000
           env:
