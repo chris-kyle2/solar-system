@@ -222,7 +222,7 @@ pipeline {
              withCredentials([
                         string(credentialsId: 'GIT_USERNAME', variable: 'GIT_USERNAME'),
                         string(credentialsId: 'GIT_TOKEN', variable: 'GIT_TOKEN')
-                    ])
+                    ]){
             sh """
                 echo "Cloning manifest repository..."
                 git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/chris-kyle2/solar-system-manifests.git
@@ -239,6 +239,7 @@ pipeline {
                 
                 git push origin main
             """
+                    }
         }
     }
 }
