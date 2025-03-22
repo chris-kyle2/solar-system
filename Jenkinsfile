@@ -212,22 +212,37 @@ pipeline {
                 """
             }
         }
-        stage('Update Kubernetes Manifest') {
-            steps {
-                script {
-                    sh """
-                        git checkout main || git checkout -b main  # Ensure we're on main
-                        sed -i 's|image: ${DOCKER_USERNAME}/${DOCKER_IMAGE}:.*|image: ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${GIT_COMMIT}|' ${K8S_MANIFEST}
-                        git config --global user.email "22ms0010@iitism.ac.in"
-                        git config --global user.name "chris-kyle2"
-                        git add ${K8S_MANIFEST}
-                        git commit -m "Update Kubernetes deployment to image ${GIT_COMMIT}"
-                        git push origin main
-                """
+        stage('Update Kubernetes Manifests') {
+    environment {
+        MANIFEST_REPO = 'https://github.com/chris-kyle2/solar-system-manifests.git'
+        MANIFEST_DIR = 'solar-system-manifests'
+    }
+    steps {
+        script {
+             withCredentials([
+                        string(credentialsId: 'GIT_USERNAME', variable: 'GIT_USERNAME'),
+                        string(credentialsId: 'GIT_TOKEN', variable: 'GIT_TOKEN')
+                    ])
+            sh """
+                echo "Cloning manifest repository..."
+                git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/chris-kyle2/solar-system-manifests.git
+                cd ${MANIFEST_DIR}
 
-                }
-            }
+                echo "Updating deployment YAML with new image tag..."
+                sed -i "s|image: 22monk/solar-system-app:.*|image: 22monk/solar-system-app:${GIT_COMMIT}|" node-app-deployment.yaml
+
+                echo "Committing and pushing changes..."
+                git config --global user.email "22ms0010@iitism.ac.in"
+                git config --global user.name "chris-kyle2"
+                git add node-app-deployment.yaml
+                git commit -m "Update Kubernetes deployment to image ${GIT_COMMIT}"
+                
+                git push origin main
+            """
         }
+    }
+}
+
         
     }
     post {
