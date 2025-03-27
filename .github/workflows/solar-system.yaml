@@ -121,15 +121,14 @@ jobs:
                   # Run database initialization script
                   docker run --rm --network=solar-net \
                     -v ${{ github.workspace }}:/app \
-                    -w /app node:18 bash -c "npm install && sleep 5 && MONGO_URI='mongodb://mongo:27017/testdb' node initDB.js"
-                  sleep 10  # Give some extra time for DB initialization
-              
-                  # List Docker images
-                  docker image ls
-              
+                    -w /app \
+                    -e MONGO_URI='mongodb://mongo:27017/testdb' \
+                    node:18 bash -c "npm install && node initDB.js"
+                  
                   # Start the application container
                   docker run -d --name=solar-system --network=solar-net \
-                    -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
+                    -p 3000:3000 \
+                    -e MONGO_URI='mongodb://mongo:27017/testdb' \
                     ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
                   sleep 15  # Ensure the app has enough time to start
               
