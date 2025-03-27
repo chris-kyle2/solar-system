@@ -107,7 +107,7 @@ jobs:
               with:
                 context: .
                 file: Dockerfile
-                push: false
+                push: true
                 tags: ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
             - name: Check & Create Docker Network
               run: |
@@ -136,12 +136,22 @@ jobs:
             - name: Run Application Container
               run: |
                   echo "Starting solar-system container..."
+                  docker pull ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
                   docker run -d --name=solar-system --network=solar-net \
                     -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
                     ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
                   
-                  echo "Checking logs for solar-system container..."
-                  docker logs solar-system || echo "Failed to retrieve logs!"
+                  echo "Checking container logs..."
+                  if ! docker logs solar-system; then
+                      echo "Warning: Failed to retrieve logs!"
+                  fi
+
+                  echo "Checking if container is still running..."
+                  if ! docker ps | grep solar-system; then
+                      echo "Error: solar-system container has stopped unexpectedly!"
+                      docker logs solar-system
+                      exit 1
+                  fi
               
             - name: Wait for Application to Start
               run: |
