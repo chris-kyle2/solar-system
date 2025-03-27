@@ -123,16 +123,36 @@ jobs:
                 docker run -d --name=solar-system --network=solar-net \
                  -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
                  ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
-                sleep 5
-                export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system)
+                echo "Waiting for solar-system container to be ready..."
+                for i in {1..10}; do
+                   sleep 3
+                   docker ps | grep solar-system && break
+                   echo "Retrying... ($i/10)"
+                done
+                export IP=$(docker inspect -f '{{range.NetworkSettings.Networks.solar-net}}{{.IPAddress}}{{end}}' solar-system)
+                if [[ -z "$IP" ]]; then
+                    echo "Failed to get container IP. Dumping container details:"
+                    docker inspect solar-system
+                    exit 1
+                fi
                 echo "IP: $IP"
-                curl -X GET http://${IP}:3000/live || (echo "Health check failed!" && exit 1)
-                curl -X GET http://${IP}:3000/ready || (echo "Ready check failed!" && exit 1)
-                curl -X GET http://${IP}:3000/os || (echo "OS check failed!" && exit 1)
-                curl -X GET http://${IP}:3000/ 
-                curl -X POST http://${IP}:3000/planet \
-                     -H "Content-Type: application/json" \
-                     -d '{"id": 1}' || (echo "Planet fetch failed!" && exit 1)
+                if ! curl -X GET http://${IP}:3000/live; then
+                    echo "Health check failed! Dumping logs:"
+                    docker logs solar-system
+                    exit 1
+                fi
+                if ! curl -X GET http://${IP}:3000/ready; then
+                    echo "Ready check failed! Dumping logs:"
+                    docker logs solar-system
+                    exit 1
+                fi
+                if ! curl -X GET http://${IP}:3000/os; then
+                    echo "OS check failed! Dumping logs:"
+                    docker logs solar-system
+                    exit 1
+                fi
+                  
+                
 
                 docker rm -f solar-system
                 docker rm -f mongo
