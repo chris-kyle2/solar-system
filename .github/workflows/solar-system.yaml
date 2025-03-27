@@ -5,6 +5,10 @@ on:
     push:
         branches:
             - main
+env:
+    MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}
+    MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+    MONGO_URI: 'mongodb://${{ vars.MONGO_USERNAME }}:${{ secrets.MONGO_PASSWORD }}@localhost:27017/testdb'
 jobs:
     unit-testing:
         runs-on: ubuntu-latest
