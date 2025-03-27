@@ -138,13 +138,21 @@ jobs:
               run: |
                  echo "Pulling the latest image..."
                  IMAGE_NAME="${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}"
+                 echo "Removing any old image versions..."
+                 docker image prune -f
               
                  docker pull $IMAGE_NAME
                  echo "Running container using image: $IMAGE_NAME"
+
+                 echo "Verifying pulled image SHA..."
+                 docker inspect --format='{{.Id}}' $IMAGE_NAME
               
                  docker run -d --name=solar-system --network=solar-net \
                  -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
                  $IMAGE_NAME
+
+                 echo "Verifying running container image SHA..."
+                 docker inspect --format='{{.Image}}' solar-system
           
                   
                   echo "Checking container logs..."
