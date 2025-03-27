@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "mocha app-test.js --exit",
+    "test": "mocha app-test.js --reporter mocha-junit-reporter --reporter-options mochaFile=./test-results.xml --exit",
     "coverage": "nyc mocha app-test.js --exit"
   },
   "keywords": [],
@@ -22,6 +22,7 @@
     "chai": "^4.3.4",
     "chai-http": "^4.3.0",
     "mocha": "^9.1.3",
+    "mocha-junit-reporter": "^2.2.1",
     "nodemon": "^3.1.9"
   }
 }
