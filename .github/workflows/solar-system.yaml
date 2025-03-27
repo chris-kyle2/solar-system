@@ -11,7 +11,12 @@ env:
 
 jobs:
     unit-testing:
-        runs-on: ubuntu-latest
+        name: Unit Testing
+        strategy:
+            matrix:
+                node-version: [18,19,20]
+                os: [ubuntu-latest, windows-latest]
+        runs-on: ${{ matrix.os }}
         services:
             mongo:
                 image: mongo:latest
@@ -21,10 +26,10 @@ jobs:
             - name: Checkout Code
               uses: actions/checkout@v4
 
-            - name: Setup Node.js
+            - name: Setup Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v4
               with:
-                node-version: 18
+                node-version: ${{ matrix.node-version }}
 
             - name: Install Dependencies
               run: npm install
