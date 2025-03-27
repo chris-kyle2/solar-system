@@ -129,6 +129,16 @@ jobs:
                 sleep 5
                 export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system)
                 curl -X GET http://localhost:3000/live || (echo "Health check failed!" && exit 1)
+                curl -X GET http://localhost:3000/ready || (echo "Ready check failed!" && exit 1)
+                curl -X GET http://localhost:3000/os || (echo "OS check failed!" && exit 1)
+                curl -X GET http://localhost:3000/ 
+                curl -X POST http://localhost:3000/planet \
+                     -H "Content-Type: application/json" \
+                     -d '{"id": 1}' || (echo "Planet creation failed!" && exit 1)
+
+
+
+
                 docker rm -f solar-system
                 docker rm -f mongo
                 docker network rm solar-net
