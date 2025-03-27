@@ -7,9 +7,7 @@ on:
             - main
 
 env:
-    MONGO_USERNAME: ${{ vars.MONGO_USER }}
-    MONGO_PASSWORD: ${{ secrets.MONGO_PASS }}
-    MONGO_URI: 'mongodb://localhost:27017/testdb'
+  MONGO_URI: 'mongodb://localhost:27017/testdb'
 
 jobs:
     unit-testing:
