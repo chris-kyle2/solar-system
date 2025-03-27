@@ -111,6 +111,16 @@ jobs:
                 tags: ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
             - name: Test Docker Image
               run: |
+                docker network create solar-net
+
+                docker run -d --name=mongo \
+                -p 27017:27017 \
+                mongo:latest
+                sleep 10
+                docker run --rm --network=solar-net \
+                -v  ${{ github.workspace }}:/app \
+                -w /app node:18 node initDB.js 
+
                 docker image ls
                 docker run -d --name=solar-system \
                 -p 3000:3000 \
@@ -118,8 +128,9 @@ jobs:
                 ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
                 sleep 5
                 export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system)
-                curl -X GET http://${IP}:3000/live
-                curl -X GET http://${IP}:3000/api/planets
+                curl -X GET http://localhost:3000/live || (echo "Health check failed!" && exit 1)
                 docker rm -f solar-system
+                docker rm -f mongo
+                docker network rm solar-net
                 docker rmi ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
             
