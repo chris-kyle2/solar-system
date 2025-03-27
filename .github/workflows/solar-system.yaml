@@ -8,6 +8,17 @@ on:
 jobs:
     unit-testing:
         runs-on: ubuntu-latest
+        services:
+            mongo:
+                image: mongo:latest
+                ports:
+                    - 27017:27017
+                options: >-
+                    --name mongo-test
+                    --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok' --quiet"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
         steps:
             - name: checkout code
               uses: actions/checkout@v4
@@ -17,6 +28,10 @@ jobs:
                 node-version: 18
             - name: Install dependencies
               run: npm install
+            - name: Wait for MongoDB to be ready
+              run: sleep 20
+            - name: Run Database Initialization Script
+              run: node initDB.js
             - name: Run unit tests
               run: npm test
             
