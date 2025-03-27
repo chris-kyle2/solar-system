@@ -109,54 +109,95 @@ jobs:
                 file: Dockerfile
                 push: false
                 tags: ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
-            - name: Test Docker Image
+            - name: Check & Create Docker Network
               run: |
-                docker network ls | grep "solar-net" || docker network create solar-net
-
-                docker run -d --name=mongo --network=solar-net -p 27017:27017 mongo:latest
-                sleep 20
-                docker run --rm --network=solar-net \
-                 -v ${{ github.workspace }}:/app \
-                 -w /app node:18 bash -c "npm install && MONGO_URI='mongodb://mongo:27017/testdb' node initDB.js"
-
-                docker image ls
-                docker run -d --name=solar-system --network=solar-net \
-                 -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
-                 ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
-                docker logs solar-system
-                echo "Waiting for solar-system container to be ready..."
-                for i in {1..10}; do
-                   sleep 3
-                   docker ps | grep solar-system && break
-                   echo "Retrying... ($i/10)"
-                done
-                export IP=$(docker inspect -f '{{range.NetworkSettings.Networks.solar-net}}{{.IPAddress}}{{end}}' solar-system)
-                if [[ -z "$IP" ]]; then
-                    echo "Failed to get container IP. Dumping container details:"
-                    docker inspect solar-system
-                    exit 1
-                fi
-                echo "IP: $IP"
-                if ! curl -X GET http://${IP}:3000/live; then
-                    echo "Health check failed! Dumping logs:"
-                    docker logs solar-system
-                    exit 1
-                fi
-                if ! curl -X GET http://${IP}:3000/ready; then
-                    echo "Ready check failed! Dumping logs:"
-                    docker logs solar-system
-                    exit 1
-                fi
-                if ! curl -X GET http://${IP}:3000/os; then
-                    echo "OS check failed! Dumping logs:"
-                    docker logs solar-system
-                    exit 1
-                fi
+                  echo "Checking if network 'solar-net' exists..."
+                  docker network ls | grep "solar-net" && echo "Network exists" || docker network create solar-net
+              
+            - name: Start MongoDB Container
+              run: |
+                  echo "Starting MongoDB container..."
+                  docker run -d --name=mongo --network=solar-net -p 27017:27017 mongo:latest
+                  sleep 20
+                  echo "MongoDB is now running."
+              
+            - name: Run Database Initialization
+              run: |
+                  echo "Initializing MongoDB with initDB.js..."
+                  docker run --rm --network=solar-net \
+                    -v ${{ github.workspace }}:/app \
+                    -w /app node:18 bash -c "npm install && MONGO_URI='mongodb://mongo:27017/testdb' node initDB.js"
+              
+            - name: List Docker Images
+              run: |
+                  echo "Listing available Docker images..."
+                  docker image ls
+              
+            - name: Run Application Container
+              run: |
+                  echo "Starting solar-system container..."
+                  docker run -d --name=solar-system --network=solar-net \
+                    -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
+                    ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
                   
-                
-
-                docker rm -f solar-system
-                docker rm -f mongo
-                docker network rm solar-net
-                docker rmi ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
-            
+                  echo "Checking logs for solar-system container..."
+                  docker logs solar-system || echo "Failed to retrieve logs!"
+              
+            - name: Wait for Application to Start
+              run: |
+                  echo "Waiting for the application to be ready..."
+                  for i in {1..10}; do
+                     sleep 3
+                     docker ps | grep solar-system && echo "Application is running!" && break
+                     echo "Retrying... ($i/10)"
+                  done
+              
+            - name: Fetch Application Container IP
+              run: |
+                  echo "Retrieving solar-system container IP..."
+                  export IP=$(docker inspect -f '{{range.NetworkSettings.Networks.solar-net}}{{.IPAddress}}{{end}}' solar-system)
+                  
+                  if [[ -z "$IP" ]]; then
+                      echo "Failed to get container IP. Dumping container details:"
+                      docker inspect solar-system
+                      exit 1
+                  fi
+                  
+                  echo "Application IP: $IP"
+                  echo "IP=$IP" >> $GITHUB_ENV
+              
+            - name: Perform Health Checks
+              run: |
+                  echo "Performing health checks on solar-system container..."
+                  
+                  if ! curl -X GET http://${{ env.IP }}:3000/live; then
+                      echo "Health check failed! Dumping logs:"
+                      docker logs solar-system
+                      exit 1
+                  fi
+              
+                  if ! curl -X GET http://${{ env.IP }}:3000/ready; then
+                      echo "Readiness check failed! Dumping logs:"
+                      docker logs solar-system
+                      exit 1
+                  fi
+              
+                  if ! curl -X GET http://${{ env.IP }}:3000/os; then
+                      echo "OS endpoint check failed! Dumping logs:"
+                      docker logs solar-system
+                      exit 1
+                  fi
+              
+            - name: Cleanup Docker Containers & Network
+              run: |
+                  echo "Cleaning up resources..."
+                  docker rm -f solar-system
+                  docker rm -f mongo
+                  docker network rm solar-net
+                  echo "Cleanup completed."
+              
+            - name: Remove Docker Image
+              run: |
+                  echo "Removing Docker image..."
+                  docker rmi ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }} || echo "Image removal failed, but continuing..."
+              
