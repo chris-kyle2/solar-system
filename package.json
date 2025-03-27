@@ -7,7 +7,7 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "test": "mocha app-test.js --reporter mocha-junit-reporter --reporter-options mochaFile=./test-results.xml --exit",
-    "coverage": "nyc mocha app-test.js --exit"
+    "coverage": "nyc --reporter=lcov --reporter=text mocha app-test.js --exit"
   },
   "keywords": [],
   "author": "",

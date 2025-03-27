@@ -14,7 +14,7 @@ jobs:
         name: Unit Testing
         strategy:
             matrix:
-                node-version: [18,19,20]
+                node-version: [18]
                 os: [ubuntu-latest]
         runs-on: ${{ matrix.os }}
         services:
@@ -47,3 +47,23 @@ jobs:
               with:
                 name: test-results-${{ github.run_id }}
                 path: test-results.xml
+    Code-Coverage:
+        name: Code Coverage
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+            - name: Setup Nodejs 18
+              uses: actions/setup-node@v4
+              with: 
+                node-version: 18
+            - name: Install Dependencies
+              run: npm install
+            - name: Run Code Coverage
+              run: npm run coverage
+            - name: Archive Coverage Report
+              uses: actions/upload-artifact@v4
+              with:
+                name: coverage-${{ github.run_id }}
+                path: coverage
+                retention-days: 1
