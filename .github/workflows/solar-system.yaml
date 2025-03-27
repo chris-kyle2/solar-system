@@ -123,6 +123,7 @@ jobs:
                 docker run -d --name=solar-system --network=solar-net \
                  -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
                  ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
+                docker logs solar-system
                 echo "Waiting for solar-system container to be ready..."
                 for i in {1..10}; do
                    sleep 3
