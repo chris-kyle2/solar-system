@@ -111,21 +111,17 @@ jobs:
                 tags: ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
             - name: Test Docker Image
               run: |
-                docker network create solar-net
+                docker network ls | grep "solar-net" || docker network create solar-net
 
-                docker run -d --name=mongo \
-                -p 27017:27017 \
-                mongo:latest
-                sleep 10
+                docker run -d --name=mongo --network=solar-net -p 27017:27017 mongo:latest
                 docker run --rm --network=solar-net \
-                -v  ${{ github.workspace }}:/app \
-                -w /app node:18 bash -c "npm install && node initDB.js"
+                 -v ${{ github.workspace }}:/app \
+                 -w /app node:18 bash -c "npm install && MONGO_URI='mongodb://mongo:27017/testdb' node initDB.js"
 
                 docker image ls
-                docker run -d --name=solar-system \
-                -p 3000:3000 \
-                -e MONGO_URI="mongodb://mongo:27017/testdb" \
-                ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
+                docker run -d --name=solar-system --network=solar-net \
+                 -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
+                 ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
                 sleep 5
                 export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system)
                 curl -X GET http://localhost:3000/live || (echo "Health check failed!" && exit 1)
@@ -134,10 +130,7 @@ jobs:
                 curl -X GET http://localhost:3000/ 
                 curl -X POST http://localhost:3000/planet \
                      -H "Content-Type: application/json" \
-                     -d '{"id": 1}' || (echo "Planet creation failed!" && exit 1)
-
-
-
+                     -d '{"id": 1}' || (echo "Planet fetch failed!" && exit 1)
 
                 docker rm -f solar-system
                 docker rm -f mongo
