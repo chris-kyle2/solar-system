@@ -119,7 +119,7 @@ jobs:
                 sleep 10
                 docker run --rm --network=solar-net \
                 -v  ${{ github.workspace }}:/app \
-                -w /app node:18 node initDB.js 
+                -w /app node:18 bash -c "npm install && node initDB.js"
 
                 docker image ls
                 docker run -d --name=solar-system \
