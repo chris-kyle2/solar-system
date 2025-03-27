@@ -111,54 +111,51 @@ jobs:
                 tags: ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
             - name: Test Docker Image
               run: |
-                  # Create Docker network if it doesn't exist
-                  docker network ls | grep "solar-net" || docker network create solar-net
+                    # Create Docker network if it doesn't exist
+                    docker network ls | grep "solar-net" || docker network create solar-net
               
-                  # Start MongoDB container
-                  docker run -d --name=mongo --network=solar-net -p 27017:27017 mongo:latest
-                  sleep 15  # Allow MongoDB to start properly
+                    # Start MongoDB container
+                    docker run -d --name=mongo --network=solar-net -p 27017:27017 mongo:latest
+                    
+                    # Wait for MongoDB to be ready before proceeding
+                    for i in {1..10}; do
+                      nc -z mongo 27017 && echo "MongoDB is up" && break
+                      echo "Waiting for MongoDB..."
+                      sleep 5
+                    done || (echo "MongoDB failed to start!" && exit 1)
               
-                  # Run database initialization script
-                  docker run --rm --network=solar-net \
-                    -v ${{ github.workspace }}:/app \
-                    -w /app \
-                    -e MONGO_URI='mongodb://mongo:27017/testdb' \
-                    node:18 bash -c "npm install && node initDB.js"
-                  
-                  # Start the application container
-                  docker run -d --name=solar-system --network=solar-net \
-                    -p 3000:3000 \
-                    -e MONGO_URI='mongodb://mongo:27017/testdb' \
-                    ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
-                  sleep 15  # Ensure the app has enough time to start
+                    # Run database initialization script
+                    docker run --rm --network=solar-net \
+                      -v ${{ github.workspace }}:/app \
+                      -w /app \
+                      -e MONGO_URI='mongodb://mongo:27017/testdb' \
+                      node:18 bash -c "npm install && node initDB.js"
+                    
+                    # Start the application container
+                    docker run -d --name=solar-system --network=solar-net \
+                      -p 3000:3000 \
+                      -e MONGO_URI='mongodb://mongo:27017/testdb' \
+                      ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
               
-                  # Get the container IP (optional, using localhost for curl tests)
-                  export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system)
+                    # Wait for the application to be ready
+                    for i in {1..10}; do
+                      curl -s http://localhost:3000/live && echo "App is live!" && break
+                      echo "Waiting for the app to start..."
+                      sleep 5
+                    done || (echo "Application failed to start!" && exit 1)
               
-                  # Health checks with retries
-                  for i in {1..5}; do
-                    curl -X GET http://localhost:3000/live && break
-                    echo "Waiting for app to become live..."
-                    sleep 5
-                  done || (echo "Health check failed!" && exit 1)
+                    # Run Health Checks
+                    curl -X GET http://localhost:3000/ready || (echo "Ready check failed!" && exit 1)
+                    curl -X GET http://localhost:3000/os || (echo "OS check failed!" && exit 1)
+                    curl -X GET http://localhost:3000/ || (echo "Homepage check failed!" && exit 1)
               
-                  for i in {1..5}; do
-                    curl -X GET http://localhost:3000/ready && break
-                    echo "Waiting for app to be ready..."
-                    sleep 5
-                  done || (echo "Ready check failed!" && exit 1)
+                    # Test planet endpoint
+                    curl -X POST http://localhost:3000/planet \
+                         -H "Content-Type: application/json" \
+                         -d '{"id": 1}' || (echo "Planet fetch failed!" && exit 1)
               
-                  curl -X GET http://localhost:3000/os || (echo "OS check failed!" && exit 1)
-                  curl -X GET http://localhost:3000/ || (echo "Homepage check failed!" && exit 1)
-              
-                  # Test planet endpoint
-                  curl -X POST http://localhost:3000/planet \
-                       -H "Content-Type: application/json" \
-                       -d '{"id": 1}' || (echo "Planet fetch failed!" && exit 1)
-              
-                  # Cleanup
-                  docker rm -f solar-system
-                  docker rm -f mongo
-                  docker network rm solar-net
-                  docker rmi ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
+                    # Cleanup
+                    docker rm -f solar-system mongo
+                    docker network rm solar-net
+                    docker rmi ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
               
