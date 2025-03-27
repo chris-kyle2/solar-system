@@ -125,11 +125,11 @@ jobs:
                  ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
                 sleep 5
                 export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system)
-                curl -X GET http://localhost:3000/live || (echo "Health check failed!" && exit 1)
-                curl -X GET http://localhost:3000/ready || (echo "Ready check failed!" && exit 1)
-                curl -X GET http://localhost:3000/os || (echo "OS check failed!" && exit 1)
-                curl -X GET http://localhost:3000/ 
-                curl -X POST http://localhost:3000/planet \
+                curl -X GET http://${IP}:3000/live || (echo "Health check failed!" && exit 1)
+                curl -X GET http://${IP}:3000/ready || (echo "Ready check failed!" && exit 1)
+                curl -X GET http://${IP}:3000/os || (echo "OS check failed!" && exit 1)
+                curl -X GET http://${IP}:3000/ 
+                curl -X POST http://${IP}:3000/planet \
                      -H "Content-Type: application/json" \
                      -d '{"id": 1}' || (echo "Planet fetch failed!" && exit 1)
 
