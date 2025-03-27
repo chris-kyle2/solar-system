@@ -22,7 +22,7 @@ jobs:
                     - 27017:27017
                 options: >-
                     --name mongo-test
-                    --health-cmd "mongosh -u ${{ vars.MONGO_USER }} -p ${{ secrets.MONGO_PASS }} --authenticationDatabase admin --eval 'db.runCommand(\"ping\").ok' --quiet"
+                    --health-cmd mongosh --eval 'db.runCommand("ping").ok' --quiet
                     --health-interval 10s
                     --health-timeout 5s
                     --health-retries 5
