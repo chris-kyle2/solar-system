@@ -125,6 +125,7 @@ jobs:
                  ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
                 sleep 5
                 export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system)
+                echo "IP: $IP"
                 curl -X GET http://${IP}:3000/live || (echo "Health check failed!" && exit 1)
                 curl -X GET http://${IP}:3000/ready || (echo "Ready check failed!" && exit 1)
                 curl -X GET http://${IP}:3000/os || (echo "OS check failed!" && exit 1)
