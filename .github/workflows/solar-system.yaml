@@ -124,7 +124,7 @@ jobs:
                 docker image ls
                 docker run -d --name=solar-system \
                 -p 3000:3000 \
-                -e MONGO_URI=${{ env.MONGO_URI }} \
+                -e MONGO_URI="mongodb://mongo:27017/testdb" \
                 ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
                 sleep 5
                 export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system)
