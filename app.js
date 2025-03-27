@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '/')));
 app.use(cors());
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://mongo:27017/testdb";
+const MONGO_URI ="mongodb://mongo:27017/testdb";
 
 async function connectDB() {
     try {
