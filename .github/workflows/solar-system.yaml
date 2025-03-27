@@ -133,13 +133,19 @@ jobs:
                   echo "Listing available Docker images..."
                   docker image ls
               
-            - name: Run Application Container
+            
+            - name: Start Solar System Container
               run: |
-                  echo "Starting solar-system container..."
-                  docker pull ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
-                  docker run -d --name=solar-system --network=solar-net \
-                    -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
-                    ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
+                 echo "Pulling the latest image..."
+                 IMAGE_NAME="${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}"
+              
+                 docker pull $IMAGE_NAME
+                 echo "Running container using image: $IMAGE_NAME"
+              
+                 docker run -d --name=solar-system --network=solar-net \
+                 -p 3000:3000 -e MONGO_URI="mongodb://mongo:27017/testdb" \
+                 $IMAGE_NAME
+          
                   
                   echo "Checking container logs..."
                   if ! docker logs solar-system; then
