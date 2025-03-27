@@ -49,6 +49,11 @@ jobs:
                 path: test-results.xml
     Code-Coverage:
         name: Code Coverage
+        services:
+            mongo:
+                image: mongo:latest
+                ports:
+                    - 27017:27017
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Code
