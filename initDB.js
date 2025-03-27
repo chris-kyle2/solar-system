@@ -78,7 +78,7 @@ console.log("MONGO_URI from env:", process.env.MONGO_URI);
 
 async function initDb() {
     try {
-        await mongoose.connect('mongodb://mongo:27017/testdb');
+        await mongoose.connect(process.env.MONGO_URI);
         console.log('Connected to MongoDB');
 
         // Define the schema
