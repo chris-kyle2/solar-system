@@ -6,6 +6,8 @@ COPY package*.json /usr/app/
 
 RUN npm install
 
+COPY envLoader.js ./envLoader.js 
+
 COPY . .
 
 RUN ls -la /usr/app && ls -la /usr/app/envLoader.js
