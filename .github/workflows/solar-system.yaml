@@ -194,53 +194,12 @@ jobs:
                        echo "Retrying... ($i/10)"
                     done
   
-            - name: Fetch Application Container IP
-              run: |
-                    echo "Retrieving solar-system container IP..."
-                    export IP=$(docker inspect -f '{{range.NetworkSettings.Networks.solar-net}}{{.IPAddress}}{{end}}' solar-system)
-                    
-                    if [[ -z "$IP" ]]; then
-                        echo "Failed to get container IP. Dumping container details:"
-                        docker inspect solar-system
-                        exit 1
-                    fi
-                    
-                    echo "Application IP: $IP"
-                    echo "IP=$IP" >> $GITHUB_ENV
+            
   
             - name: Perform Health Checks
               run: |
-                    echo "Performing health checks on solar-system container..."
+                      echo "Performing health checks on solar-system container..."    
+                      curl -X GET http://localhost:3000/live || (echo "Health check failed!" && exit 1)
+                      curl -X GET http://localhost:3000/ready || (echo "Readiness check failed!" && exit 1)
+                      curl -X GET http://localhost:3000/os || (echo "OS endpoint check failed!" && exit 1)
                     
-                    if ! curl -X GET http://${{ env.IP }}:3000/live; then
-                        echo "Health check failed! Dumping logs:"
-                        docker logs solar-system
-                        exit 1
-                    fi
-                  
-                    if ! curl -X GET http://${{ env.IP }}:3000/ready; then
-                        echo "Readiness check failed! Dumping logs:"
-                        docker logs solar-system
-                        exit 1
-                    fi
-                  
-                    if ! curl -X GET http://${{ env.IP }}:3000/os; then
-                        echo "OS endpoint check failed! Dumping logs:"
-                        docker logs solar-system
-                        exit 1
-                    fi
-  
-            - name: Cleanup Docker Containers & Network
-              run: |
-                    echo "Cleaning up resources..."
-                    docker rm -f solar-system
-                    docker rm -f mongo
-                    docker network rm solar-net
-                    docker volume rm solar-system-env
-                    echo "Cleanup completed."
-  
-            - name: Remove Docker Image
-              run: |
-                    echo "Removing Docker image..."
-                    docker rmi ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }} || echo "Image removal failed, but continuing..."
-  
