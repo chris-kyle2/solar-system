@@ -112,133 +112,129 @@ jobs:
             
             - name: Check & Create Docker Network
               run: |
-                echo "Checking if network 'solar-net' exists..."
-                docker network ls | grep "solar-net" && echo "Network exists" || docker network create solar-net
-            
+                  echo "Checking if network 'solar-net' exists..."
+                  docker network ls | grep "solar-net" && echo "Network exists" || docker network create solar-net
+  
+            - name: Create Docker Volume for Environment Variables
+              run: docker volume create solar-system-env
+  
+            - name: Store Environment Variables in Volume
+              run: |
+                  docker run -v solar-system-env:/mnt --rm busybox sh -c 'echo "MONGO_URI=mongodb://appuser:apppassword@mongo:27017/solar-system-db?authSource=solar-system-db" > /mnt/env_vars'
+  
             - name: Start MongoDB Container with Authentication
               run: |
-                echo "Starting MongoDB container with authentication..."
-                docker run -d --name=mongo --network=solar-net \
-                    -p 27017:27017 \
-                    -e MONGO_INITDB_ROOT_USERNAME=admin \
-                    -e MONGO_INITDB_ROOT_PASSWORD=adminpassword \
-                    -e MONGO_INITDB_DATABASE=solar-system-db \
-                    mongo:latest
-                sleep 20
-                echo "MongoDB is now running with authentication."
-            
+                  echo "Starting MongoDB container with authentication..."
+                  docker run -d --name=mongo --network=solar-net \
+                      -p 27017:27017 \
+                      -e MONGO_INITDB_ROOT_USERNAME=admin \
+                      -e MONGO_INITDB_ROOT_PASSWORD=adminpassword \
+                      -e MONGO_INITDB_DATABASE=solar-system-db \
+                      mongo:latest
+                  sleep 20
+                  echo "MongoDB is now running with authentication."
+  
             - name: Create MongoDB Application User
               run: |
-                echo "Creating MongoDB application user..."
-                docker exec -i mongo mongosh --username admin --password adminpassword --authenticationDatabase admin <<EOF
-                use solar-system-db;
-                db.createUser({
-                  user: "appuser",
-                  pwd: "apppassword",
-                  roles: [{ role: "readWrite", db: "solar-system-db" }]
-                });
-                EOF
-                echo "MongoDB application user created."
-            
+                  echo "Creating MongoDB application user..."
+                  docker exec -i mongo mongosh --username admin --password adminpassword --authenticationDatabase admin <<EOF
+                  use solar-system-db;
+                  db.createUser({
+                    user: "appuser",
+                    pwd: "apppassword",
+                    roles: [{ role: "readWrite", db: "solar-system-db" }]
+                  });
+                  EOF
+                  echo "MongoDB application user created."
+  
             - name: Run Database Initialization
               run: |
-                echo "Initializing MongoDB with initDB.js..."
-                docker run --rm --network=solar-net \
-                  -v ${{ github.workspace }}:/app \
-                  -w /app node:18 bash -c "npm install && MONGO_URI='mongodb://appuser:apppassword@mongo:27017/solar-system-db?authSource=solar-system-db' node initDB.js"
-            
+                  echo "Initializing MongoDB with initDB.js..."
+                  docker run --rm --network=solar-net \
+                    -v ${{ github.workspace }}:/app \
+                    -w /app node:18 bash -c "npm install && MONGO_URI='mongodb://appuser:apppassword@mongo:27017/solar-system-db?authSource=solar-system-db' node initDB.js"
+  
             - name: List Docker Images
               run: |
-                echo "Listing available Docker images..."
-                docker image ls
-            
+                  echo "Listing available Docker images..."
+                  docker image ls
+  
             - name: Start Solar System Container
               run: |
-                 echo "Pulling the latest image..."
-                 IMAGE_NAME="${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}"
-                 echo "Removing any old image versions..."
-                 docker image prune -f
-              
-                 docker pull $IMAGE_NAME
-                 echo "Running container using image: $IMAGE_NAME"
-              
-                 echo "Verifying pulled image SHA..."
-                 docker inspect --format='{{.Id}}' $IMAGE_NAME
-              
-                 docker run -d --name=solar-system --network=solar-net \
-                 -p 3000:3000 -e MONGO_URI="mongodb://appuser:apppassword@mongo:27017/solar-system-db?authSource=solar-system-db" \
-                 $IMAGE_NAME
-              
-                 echo "Verifying running container image SHA..."
-                 docker inspect --format='{{.Image}}' solar-system
-              
-                 echo "Checking container logs..."
-                 if ! docker logs solar-system; then
-                     echo "Warning: Failed to retrieve logs!"
-                 fi
-              
-                 echo "Checking if container is still running..."
-                 if ! docker ps | grep solar-system; then
-                     echo "Error: solar-system container has stopped unexpectedly!"
-                     docker logs solar-system
-                     exit 1
-                 fi
-              
+                   echo "Pulling the latest image..."
+                   IMAGE_NAME="${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}"
+                   echo "Removing any old image versions..."
+                   docker image prune -f
+                
+                   docker pull $IMAGE_NAME
+                   echo "Running container using image: $IMAGE_NAME"
+                
+                   docker run -d --name=solar-system --network=solar-net \
+                   -p 3000:3000 -v solar-system-env:/mnt \
+                   --env-file /mnt/env_vars \
+                   $IMAGE_NAME
+                
+                   echo "Checking container logs..."
+                   if ! docker logs solar-system; then
+                       echo "Warning: Failed to retrieve logs!"
+                   fi
+  
             - name: Wait for Application to Start
               run: |
-                  echo "Waiting for the application to be ready..."
-                  for i in {1..10}; do
-                     sleep 3
-                     docker ps | grep solar-system && echo "Application is running!" && break
-                     echo "Retrying... ($i/10)"
-                  done
-              
+                    echo "Waiting for the application to be ready..."
+                    for i in {1..10}; do
+                       sleep 3
+                       docker ps | grep solar-system && echo "Application is running!" && break
+                       echo "Retrying... ($i/10)"
+                    done
+  
             - name: Fetch Application Container IP
               run: |
-                  echo "Retrieving solar-system container IP..."
-                  export IP=$(docker inspect -f '{{range.NetworkSettings.Networks.solar-net}}{{.IPAddress}}{{end}}' solar-system)
-                  
-                  if [[ -z "$IP" ]]; then
-                      echo "Failed to get container IP. Dumping container details:"
-                      docker inspect solar-system
-                      exit 1
-                  fi
-                  
-                  echo "Application IP: $IP"
-                  echo "IP=$IP" >> $GITHUB_ENV
-              
+                    echo "Retrieving solar-system container IP..."
+                    export IP=$(docker inspect -f '{{range.NetworkSettings.Networks.solar-net}}{{.IPAddress}}{{end}}' solar-system)
+                    
+                    if [[ -z "$IP" ]]; then
+                        echo "Failed to get container IP. Dumping container details:"
+                        docker inspect solar-system
+                        exit 1
+                    fi
+                    
+                    echo "Application IP: $IP"
+                    echo "IP=$IP" >> $GITHUB_ENV
+  
             - name: Perform Health Checks
               run: |
-                  echo "Performing health checks on solar-system container..."
+                    echo "Performing health checks on solar-system container..."
+                    
+                    if ! curl -X GET http://${{ env.IP }}:3000/live; then
+                        echo "Health check failed! Dumping logs:"
+                        docker logs solar-system
+                        exit 1
+                    fi
                   
-                  if ! curl -X GET http://${{ env.IP }}:3000/live; then
-                      echo "Health check failed! Dumping logs:"
-                      docker logs solar-system
-                      exit 1
-                  fi
-                
-                  if ! curl -X GET http://${{ env.IP }}:3000/ready; then
-                      echo "Readiness check failed! Dumping logs:"
-                      docker logs solar-system
-                      exit 1
-                  fi
-                
-                  if ! curl -X GET http://${{ env.IP }}:3000/os; then
-                      echo "OS endpoint check failed! Dumping logs:"
-                      docker logs solar-system
-                      exit 1
-                  fi
-              
+                    if ! curl -X GET http://${{ env.IP }}:3000/ready; then
+                        echo "Readiness check failed! Dumping logs:"
+                        docker logs solar-system
+                        exit 1
+                    fi
+                  
+                    if ! curl -X GET http://${{ env.IP }}:3000/os; then
+                        echo "OS endpoint check failed! Dumping logs:"
+                        docker logs solar-system
+                        exit 1
+                    fi
+  
             - name: Cleanup Docker Containers & Network
               run: |
-                  echo "Cleaning up resources..."
-                  docker rm -f solar-system
-                  docker rm -f mongo
-                  docker network rm solar-net
-                  echo "Cleanup completed."
-              
+                    echo "Cleaning up resources..."
+                    docker rm -f solar-system
+                    docker rm -f mongo
+                    docker network rm solar-net
+                    docker volume rm solar-system-env
+                    echo "Cleanup completed."
+  
             - name: Remove Docker Image
               run: |
-                  echo "Removing Docker image..."
-                  docker rmi ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }} || echo "Image removal failed, but continuing..."
-              
+                    echo "Removing Docker image..."
+                    docker rmi ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }} || echo "Image removal failed, but continuing..."
+  
