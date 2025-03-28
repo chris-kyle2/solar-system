@@ -1,24 +1,28 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    kubernetes.io/tls-acme: "true"
   name: solar-system
   namespace: _{_NAMESPACE_}_
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing  # Change to "internal" if private
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/load-balancer-name: solar-system-alb  # ALB name
+    alb.ingress.kubernetes.io/group.name: solar-system-group
 spec:
-    rules:
-    - host: solar-system-_{_NAMESPACE_}_._{_INGRESS_IP_}_.nip.io
+  rules:
+    - host: _{_ALB_DNS_NAME_}_  # Replace with ALB DNS Name
       http:
         paths:
-        - backend:
-            service:
-              name: solar-system
-              port:
-                number: 3000
-          path: /
-          pathType: Prefix
-    tls:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: solar-system
+                port:
+                  number: 3000
+  tls:
     - hosts:
-      - solar-system-_{_NAMESPACE_}_._{_INGRESS_IP_}_.nip.io
-      secretName: ingress-local-tls
+        - _{_ALB_DNS_NAME_}_
+      secretName: ingress-tls  # If using HTTPS, make sure TLS is configured
