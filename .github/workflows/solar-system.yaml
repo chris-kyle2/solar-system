@@ -242,6 +242,9 @@ jobs:
       steps:
         - name: Checkout Code
           uses: actions/checkout@v4
+        - name: List Files
+          run: |
+            ls -la
 
         - name: Install Kubectl CLI
           uses: azure/setup-kubectl@v3
