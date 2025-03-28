@@ -289,6 +289,10 @@ jobs:
                   IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
                   REPLICAS: ${{ vars.REPLICAS }}
           - name: Create MongoDB Secret
+            env:
+              MONGO_URI: ${{ secrets.MONGO_ATLAS_URI }}
+              MONGO_USERNAME: ${{ secrets.MONGO_ATLAS_USER }}
+              MONGO_PASSWORD: ${{ secrets.MONGO_ATLAS_PASS }}
             run: |
                     echo "Using MongoDB Atlas (Production)"
                     kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
@@ -340,6 +344,10 @@ jobs:
               cat kubernetes/development/*.yaml
 
           - name: Create MongoDB Secret
+            env:
+              MONGO_URI: ${{ secrets.MONGO_ATLAS_URI }}
+              MONGO_USERNAME: ${{ secrets.MONGO_ATLAS_USER }}
+              MONGO_PASSWORD: ${{ secrets.MONGO_ATLAS_PASS }}
             run: |
               echo "Using MongoDB Atlas (Production)"
               kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
