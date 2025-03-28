@@ -289,16 +289,12 @@ jobs:
                   IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
                   REPLICAS: ${{ vars.REPLICAS }}
           - name: Create MongoDB Secret
-            env:
-              MONGO_URI: ${{ secrets.MONGO_ATLAS_URI }}
-              MONGO_USERNAME: ${{ secrets.MONGO_ATLAS_USER }}
-              MONGO_PASSWORD: ${{ secrets.MONGO_ATLAS_PASS }}
             run: |
                     echo "Using MongoDB Atlas (Production)"
                     kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
-                    --from-literal=MONGO_URI=${{ secrets.MONGO_ATLAS_URI }} \
-                    --from-literal=MONGO_USERNAME=${{ secrets.MONGO_ATLAS_USER }} \
-                    --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_ATLAS_PASS }} \
+                    --from-literal=MONGO_URI=mongodb+srv://monkakp1998:ZHxIENgSzsZW2WTe@cluster0.xsudr4y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 \
+                    --from-literal=MONGO_USERNAME=monkakp1998 \
+                    --from-literal=MONGO_PASSWORD=ZHxIENgSzsZW2WTe \
                     --save-config \
                     --dry-run=client \
                     -o yaml | kubectl apply -f -
@@ -343,20 +339,16 @@ jobs:
             run: |
               cat kubernetes/development/*.yaml
 
-          - name: Create MongoDB Secret
-            env:
-              MONGO_URI: ${{ secrets.MONGO_ATLAS_URI }}
-              MONGO_USERNAME: ${{ secrets.MONGO_ATLAS_USER }}
-              MONGO_PASSWORD: ${{ secrets.MONGO_ATLAS_PASS }}
-            run: |
-              echo "Using MongoDB Atlas (Production)"
-              kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
-              --from-literal=MONGO_URI=${{ secrets.MONGO_ATLAS_URI }} \
-              --from-literal=MONGO_USERNAME=${{ secrets.MONGO_ATLAS_USER }} \
-              --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_ATLAS_PASS }} \
-              --save-config \
-              --dry-run=client \
-              -o yaml | kubectl apply -f -
+          # - name: Create MongoDB Secret
+          #   run: |
+          #     echo "Using MongoDB Atlas (Production)"
+          #     kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+          #     --from-literal=MONGO_URI=mongodb+srv://monkakp1998:ZHxIENgSzsZW2WTe@cluster0.xsudr4y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 \
+          #     --from-literal=MONGO_USERNAME=monkakp1998 \
+          #     --from-literal=MONGO_PASSWORD=ZHxIENgSzsZW2WTe \
+          #     --save-config \
+          #     --dry-run=client \
+          #     -o yaml | kubectl apply -f -
 
           - name: Final Deployment with ALB DNS
             run: |
