@@ -8,6 +8,8 @@ RUN npm install
 
 COPY . .
 
+RUN ls -la /usr/app && ls -la /usr/app/envLoader.js
+
 # Copy your environment loader script
 COPY envLoader.js /usr/app/envLoader.js
 
