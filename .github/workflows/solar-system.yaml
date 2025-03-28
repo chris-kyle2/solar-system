@@ -243,10 +243,18 @@ jobs:
             method: kubeconfig
             kubeconfig: ${{ secrets.KUBECONFIG }}
         
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: us-east-1
+            role-skip-session-tagging: true
+              
         - name: fetch dev cluster details
           run: |
             echo "Fetching dev cluster details..."
-            kubectl version --client
+            kubectl version
             echo "------------"
             kubectl get nodes -o wide
             echo "------------"
