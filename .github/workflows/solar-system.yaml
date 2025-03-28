@@ -121,7 +121,11 @@ jobs:
             - name: Store Environment Variables in Volume
               run: |
                   docker run -v solar-system-env:/mnt --rm busybox sh -c 'echo "MONGO_URI=mongodb://appuser:apppassword@mongo:27017/solar-system-db?authSource=solar-system-db" > /mnt/env_vars'
-  
+            - name: Verify Volume Content
+              run: |
+                  echo "Checking if environment variables are stored correctly in the volume..."
+                  docker run -v solar-system-env:/mnt --rm busybox sh -c "ls -la /mnt && cat /mnt/env_vars"
+
             - name: Start MongoDB Container with Authentication
               run: |
                   echo "Starting MongoDB container with authentication..."
