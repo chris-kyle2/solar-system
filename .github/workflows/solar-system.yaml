@@ -103,13 +103,16 @@ jobs:
                 username: ${{ vars.DOCKER_USERNAME }}
                 password: ${{ secrets.DOCKER_PASSWORD }}
             - name: Build Docker Image
-              uses: docker/build-push-action@v4
-              with:
-                context: .
-                file: Dockerfile
-                push: true
-                tags: ${{ vars.DOCKER_USERNAME }}/solar-system:${{github.sha}}
-            
+              run: |
+                  docker build --no-cache -t ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }} -f Dockerfile .
+            - name: Push Docker Image
+              env:
+                    DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+                    DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+              run: |
+                    echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+                    docker push ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
+                  
             - name: Check & Create Docker Network
               run: |
                   echo "Checking if network 'solar-net' exists..."
