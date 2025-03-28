@@ -8,10 +8,10 @@ RUN npm install
 
 COPY . .
 
-ENV MONGO_URI=uriPlaceholder
-ENV MONGO_USERNAME=usernamePlaceholder
-ENV MONGO_PASSWORD=passwordPlaceholder
+# Copy your environment loader script
+COPY envLoader.js /usr/app/envLoader.js
+
+# Run the environment loader script before starting the app
+CMD ["sh", "-c", "node envLoader.js && npm start"]
 
 EXPOSE 3000
-
-CMD [ "npm", "start" ]

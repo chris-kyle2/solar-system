@@ -175,7 +175,6 @@ jobs:
                 
                    docker run -d --name=solar-system --network=solar-net \
                    -p 3000:3000 -v solar-system-env:/mnt \
-                   --env-file /mnt/env_vars \
                    $IMAGE_NAME
                 
                    echo "Checking container logs..."
