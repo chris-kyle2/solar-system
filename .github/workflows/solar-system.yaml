@@ -246,7 +246,7 @@ jobs:
           - name: List Files
             run: |
               ls -la
-              ls -la solar-system/kubernetes/development/
+              ls -la kubernetes/development/
 
           - name: Install Kubectl CLI
             uses: azure/setup-kubectl@v3
@@ -281,7 +281,7 @@ jobs:
 
           - name: Deploy App Services (Without Ingress)
             run: |
-              kubectl apply -f solar-system/kubernetes/development/ --selector='!ingress'
+              kubectl apply -f kubernetes/development/ --selector='!ingress'
 
           - name: Wait for Services to Start
             run: |
@@ -318,7 +318,7 @@ jobs:
 
           - name: Check Updated Manifest Files
             run: |
-              cat solar-system/kubernetes/development/*.yaml
+              cat kubernetes/development/*.yaml
 
           - name: Create MongoDB Secret
             run: |
@@ -333,4 +333,4 @@ jobs:
 
           - name: Final Deployment with ALB DNS
             run: |
-              kubectl apply -f solar-system/kubernetes/development/
+              kubectl apply -f kubernetes/development/
