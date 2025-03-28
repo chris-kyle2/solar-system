@@ -226,4 +226,35 @@ jobs:
             push: true
             tags: |
               ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
+    Dev-Deploy:
+      name: deploy-to dev cluster
+      needs: [Docker]
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v4
+        - name: Install Kubectl CLI
+          uses: azure/setup-kubectl@v3
+          with:
+            version: 'v1.26.0'
+        - name: Adding Context to kubectl
+          uses: azure/k8s-set-context@v3
+          with:
+            method: kubeconfig
+            kubeconfig: ${{ secrets.KUBECONFIG }}
         
+        - name: fetch dev cluster details
+          run: |
+            echo "Fetching dev cluster details..."
+            kubectl version --client
+            echo "------------"
+            kubectl get nodes -o wide
+            echo "------------"
+            kubectl get svc
+            echo "------------"
+            kubectl get pods -o wide
+        
+        
+       
+            
+
