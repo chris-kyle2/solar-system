@@ -288,9 +288,19 @@ jobs:
                   NAMESPACE: ${{ vars.NAMESPACE }}
                   IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
                   REPLICAS: ${{ vars.REPLICAS }}
+          - name: Create MongoDB Secret
+            run: |
+                    echo "Using MongoDB Atlas (Production)"
+                    kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+                    --from-literal=MONGO_URI=${{ secrets.MONGO_ATLAS_URI }} \
+                    --from-literal=MONGO_USERNAME=${{ secrets.MONGO_ATLAS_USER }} \
+                    --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_ATLAS_PASS }} \
+                    --save-config \
+                    --dry-run=client \
+                    -o yaml | kubectl apply -f -
           - name: Deploy App Services (Without Ingress)
             run: |
-              kubectl apply -f kubernetes/development/ --selector='!ingress'
+              kubectl apply -f kubernetes/development/ --selector='component!=ingress'
 
           - name: Wait for Services to Start
             run: |
@@ -304,7 +314,7 @@ jobs:
           - name: Wait for ALB to be Created
             run: |
               echo "Waiting for ALB DNS..."
-              sleep 60  # Adjust as needed for ALB provisioning
+              sleep 120  # Adjust as needed for ALB provisioning
 
           - name: Get ALB DNS Name
             id: alb-dns

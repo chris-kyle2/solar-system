@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   name: solar-system
   namespace: _{_NAMESPACE_}_
+  labels:
+    component: ingress
   annotations:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing  # Change to "internal" if private
