@@ -91,6 +91,7 @@ jobs:
             --set region=${{ env.REGION }} \
             --set vpcId=${{ env.VPC_ID }}
 
+
       - name: Verify ALB Controller Deployment
         run: |
           kubectl get deployment -n kube-system aws-load-balancer-controller
