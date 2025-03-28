@@ -3,11 +3,17 @@ name: Solar-system-workflow
 on:
     workflow_dispatch:
     push:
-        branches:
-            - main
+      branches:
+        - main
+      paths-ignore:
+        - '.github/workflows/infrastructure-setup.yml'
+        - 'kubernetes/**'
+        - 'mongodb-connect.js'
 
 env:
   MONGO_URI: 'mongodb://localhost:27017/testdb'
+  MONGO_USER: ${{ vars.MONGO_USER }}
+  MONGO_PASS: ${{ secrets.MONGO_PASS }}
 
 jobs:
     unit-testing:
@@ -261,6 +267,37 @@ jobs:
             kubectl get svc
             echo "------------"
             kubectl get pods -o wide
+        - name: Create Namespace
+          run: |
+            kubectl create namespace ${{ vars.NAMESPACE }}
+          
+        - name: Replace Token in Manifest files
+          uses: cschleiden/replace-tokens@v1
+          with:
+              tokenPrefix: '_{_'
+              tokenSuffix: '_}_'
+              files: '[ "solar-system/kubernetes/development/*.yaml"]'
+          env:
+            NAMESPACE: ${{ vars.NAMESPACE }}
+            IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
+            REPLICAS: ${{ vars.REPLICAS }}
+            INGRESS_IP: ${{ env.INGRESS_IP }}
+        - name: Check Manifest Files
+          run: |
+            cat solar-system/kubernetes/development/*.yaml
+
+        - name: Create MongoDB Secret
+          run: |
+              kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+              --from-literal=MONGO_URI=${{ inputs.mongodb-uri }} \
+              --from-literal=MONGO_USERNAME=${{ vars.MONGO_USER }} \
+              --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_PASS }} \
+              --save-config \
+              --dry-run=client \
+              -o yaml | kubectl apply -f -
+        - name: Deploy to Dev Env
+          run: |
+              kubectl apply -f ${{ inputs.k8s-manifest-dir }}
         
         
        
