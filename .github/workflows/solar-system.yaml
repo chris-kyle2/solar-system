@@ -10,89 +10,89 @@ env:
   MONGO_URI: 'mongodb://mongo:27017/testdb'
 
 jobs:
-    # unit-testing:
-    #     name: Unit Testing
-    #     strategy:
-    #         matrix:
-    #             node-version: [18]
-    #             os: [ubuntu-latest]
-    #     runs-on: ${{ matrix.os }}
-    #     services:
-    #         mongo:
-    #             image: mongo:latest
-    #             ports:
-    #                 - 27017:27017
-        # steps:
-        #     - name: Checkout Code
-        #       uses: actions/checkout@v4
+    unit-testing:
+        name: Unit Testing
+        strategy:
+            matrix:
+                node-version: [18]
+                os: [ubuntu-latest]
+        runs-on: ${{ matrix.os }}
+        services:
+            mongo:
+                image: mongo:latest
+                ports:
+                    - 27017:27017
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
 
-        #     - name: Setup Node.js ${{ matrix.node-version }}
-        #       uses: actions/setup-node@v4
-        #       with:
-        #         node-version: ${{ matrix.node-version }}
+            - name: Setup Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                node-version: ${{ matrix.node-version }}
 
-        #     - name: Cache Dependencies
-        #       uses: actions/cache@v4
-        #       with:
-        #         path: node_modules
-        #         key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+            - name: Cache Dependencies
+              uses: actions/cache@v4
+              with:
+                path: node_modules
+                key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
 
-        #     - name: Install Dependencies
-        #       run: npm install
+            - name: Install Dependencies
+              run: npm install
 
-            # - name: Wait for MongoDB to be Ready
-            #   run: sleep 20
+            - name: Wait for MongoDB to be Ready
+              run: sleep 20
 
-            # - name: Run Database Initialization Script
-            #   run: node initDB.js
+            - name: Run Database Initialization Script
+              run: node initDB.js
 
-            # - name: Run Unit Tests
-            #   run: npm test
-            # - name: Archive test results
-            #   uses: actions/upload-artifact@v4
-            #   with:
-            #     name: test-results-${{ github.run_id }}
-    #             path: test-results.xml
-    # Code-Coverage:
-    #     name: Code Coverage
-    #     services:
-    #         mongo:
-    #             image: mongo:latest
-    #             ports:
-    #                 - 27017:27017
-    #     runs-on: ubuntu-latest
-    #     steps:
-    #         - name: Checkout Code
-    #           uses: actions/checkout@v4
-    #         - name: Setup Nodejs 18
-    #           uses: actions/setup-node@v4
-            #   with: 
-            #     node-version: 18
+            - name: Run Unit Tests
+              run: npm test
+            - name: Archive test results
+              uses: actions/upload-artifact@v4
+              with:
+                name: test-results-${{ github.run_id }}
+                path: test-results.xml
+    Code-Coverage:
+        name: Code Coverage
+        services:
+            mongo:
+                image: mongo:latest
+                ports:
+                    - 27017:27017
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+            - name: Setup Nodejs 18
+              uses: actions/setup-node@v4
+              with: 
+                node-version: 18
 
-            # - name: Cache Dependencies
-            #   uses: actions/cache@v4
-            #   with:
-            #     path: node_modules
-            #     key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+            - name: Cache Dependencies
+              uses: actions/cache@v4
+              with:
+                path: node_modules
+                key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
                 
                 
-            # - name: Install Dependencies
-            #   run: npm install
-            # - name: Wait for MongoDB to be Ready
-            #   run: sleep 20
-            # - name: Run Database Initialization Script
-            #   run: node initDB.js
-            # - name: Run Code Coverage
-            #   run: npm run coverage
-            # - name: Archive Coverage Report
-            #   uses: actions/upload-artifact@v4
-            #   with:
-            #     name: coverage-${{ github.run_id }}
-            #     path: coverage
-            #     retention-days: 1
+            - name: Install Dependencies
+              run: npm install
+            - name: Wait for MongoDB to be Ready
+              run: sleep 20
+            - name: Run Database Initialization Script
+              run: node initDB.js
+            - name: Run Code Coverage
+              run: npm run coverage
+            - name: Archive Coverage Report
+              uses: actions/upload-artifact@v4
+              with:
+                name: coverage-${{ github.run_id }}
+                path: coverage
+                retention-days: 1
     Docker:
         name: login-docker
-        # needs: [unit-testing, Code-Coverage]
+        needs: [unit-testing, Code-Coverage]
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Code
