@@ -205,6 +205,9 @@ jobs:
     ghcr-login:
       name: ghcr-login
       needs: [Docker]
+      permissions:
+        contents: write
+        packages: write
       runs-on: ubuntu-latest
       steps:
         - name: ghcr-login
@@ -219,5 +222,6 @@ jobs:
             context: .
             file: Dockerfile
             push: true
-            tags: ghcr.io/{{ github.repository_owner }}/solar-system:${{ github.sha }}
+            tags: |
+              ghcr.io/{{ github.repository_owner }}/solar-system:${{ github.sha }}
         
