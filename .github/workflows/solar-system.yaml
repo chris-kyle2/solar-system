@@ -7,7 +7,7 @@ on:
             - main
 
 env:
-  MONGO_URI: 'mongodb://mongo:27017/testdb'
+  MONGO_URI: 'mongodb://localhost:27017/testdb'
 
 jobs:
     unit-testing:
