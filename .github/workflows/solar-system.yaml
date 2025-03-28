@@ -288,16 +288,7 @@ jobs:
                   NAMESPACE: ${{ vars.NAMESPACE }}
                   IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
                   REPLICAS: ${{ vars.REPLICAS }}
-          - name: Create MongoDB Secret
-            run: |
-                    echo "Using MongoDB Atlas (Production)"
-                    kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
-                    --from-literal=MONGO_URI=mongodb+srv://monkakp1998:ZHxIENgSzsZW2WTe@cluster0.xsudr4y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 \
-                    --from-literal=MONGO_USERNAME=monkakp1998 \
-                    --from-literal=MONGO_PASSWORD=ZHxIENgSzsZW2WTe \
-                    --save-config \
-                    --dry-run=client \
-                    -o yaml | kubectl apply -f -
+          
           - name: Deploy App Services (Without Ingress)
             run: |
               kubectl apply -f kubernetes/development/ --selector='component!=ingress'
@@ -309,7 +300,7 @@ jobs:
 
           - name: Deploy Ingress (Triggers ALB Creation)
             run: |
-              kubectl apply -f solar-system/kubernetes/development/ingress.yaml
+              kubectl apply -f kubernetes/development/ingress.yaml
 
           - name: Wait for ALB to be Created
             run: |
@@ -328,7 +319,7 @@ jobs:
             with:
               tokenPrefix: '_{_'
               tokenSuffix: '_}_'
-              files: solar-system/kubernetes/development/*.yaml
+              files: kubernetes/development/*.yaml
             env:
               NAMESPACE: ${{ vars.NAMESPACE }}
               IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
