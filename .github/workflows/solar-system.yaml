@@ -278,7 +278,16 @@ jobs:
           - name: Create Namespace
             run: |
               kubectl create namespace ${{ vars.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
-
+          - name: Replace Tokens in Manifest Files
+            uses: cschleiden/replace-tokens@v1
+            with:
+              tokenPrefix: '_{_'
+              tokenSuffix: '_}_'
+              files: kubernetes/development/*.yaml
+            env:
+                  NAMESPACE: ${{ vars.NAMESPACE }}
+                  IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
+                  REPLICAS: ${{ vars.REPLICAS }}
           - name: Deploy App Services (Without Ingress)
             run: |
               kubectl apply -f kubernetes/development/ --selector='!ingress'
