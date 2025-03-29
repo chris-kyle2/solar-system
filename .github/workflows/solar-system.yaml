@@ -236,111 +236,111 @@ jobs:
             tags: |
               ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
     
-    Dev-Deploy:
-        name: deploy-to dev cluster
-        needs: [Docker]
-        runs-on: ubuntu-latest
-        steps:
-          - name: Checkout Code
-            uses: actions/checkout@v4
-          - name: List Files
-            run: |
-              ls -la
-              ls -la kubernetes/development/
+    # Dev-Deploy:
+    #     name: deploy-to dev cluster
+    #     needs: [Docker]
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #       - name: Checkout Code
+    #         uses: actions/checkout@v4
+    #       - name: List Files
+    #         run: |
+    #           ls -la
+    #           ls -la kubernetes/development/
 
-          - name: Install Kubectl CLI
-            uses: azure/setup-kubectl@v3
-            with:
-              version: 'v1.26.0'
+    #       - name: Install Kubectl CLI
+    #         uses: azure/setup-kubectl@v3
+    #         with:
+    #           version: 'v1.26.0'
 
-          - name: Adding Context to kubectl
-            uses: azure/k8s-set-context@v3
-            with:
-              method: kubeconfig
-              kubeconfig: ${{ secrets.KUBECONFIG }}
+    #       - name: Adding Context to kubectl
+    #         uses: azure/k8s-set-context@v3
+    #         with:
+    #           method: kubeconfig
+    #           kubeconfig: ${{ secrets.KUBECONFIG }}
 
-          - name: Configure AWS credentials
-            uses: aws-actions/configure-aws-credentials@v4
-            with:
-              aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws-region: us-east-1
-              role-skip-session-tagging: true
+    #       - name: Configure AWS credentials
+    #         uses: aws-actions/configure-aws-credentials@v4
+    #         with:
+    #           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #           aws-region: us-east-1
+    #           role-skip-session-tagging: true
 
-          - name: Fetch Dev Cluster Details
-            run: |
-              echo "Fetching dev cluster details..."
-              kubectl version
-              kubectl get nodes -o wide
-              kubectl get svc
-              kubectl get pods -o wide
+    #       - name: Fetch Dev Cluster Details
+    #         run: |
+    #           echo "Fetching dev cluster details..."
+    #           kubectl version
+    #           kubectl get nodes -o wide
+    #           kubectl get svc
+    #           kubectl get pods -o wide
 
-          - name: Create Namespace
-            run: |
-              kubectl create namespace ${{ vars.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
-          - name: Replace Tokens in Manifest Files
-            uses: cschleiden/replace-tokens@v1
-            with:
-              tokenPrefix: '_{_'
-              tokenSuffix: '_}_'
-              files: kubernetes/development/*.yaml
-            env:
-                  NAMESPACE: ${{ vars.NAMESPACE }}
-                  IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
-                  REPLICAS: ${{ vars.REPLICAS }}
+    #       - name: Create Namespace
+    #         run: |
+    #           kubectl create namespace ${{ vars.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+    #       - name: Replace Tokens in Manifest Files
+    #         uses: cschleiden/replace-tokens@v1
+    #         with:
+    #           tokenPrefix: '_{_'
+    #           tokenSuffix: '_}_'
+    #           files: kubernetes/development/*.yaml
+    #         env:
+    #               NAMESPACE: ${{ vars.NAMESPACE }}
+    #               IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
+    #               REPLICAS: ${{ vars.REPLICAS }}
           
-          - name: Deploy App Services (Without Ingress)
-            run: |
-              kubectl apply -f kubernetes/development/ --selector='component!=ingress'
+    #       - name: Deploy App Services (Without Ingress)
+    #         run: |
+    #           kubectl apply -f kubernetes/development/ --selector='component!=ingress'
 
-          - name: Wait for Services to Start
-            run: |
-              echo "Waiting for services to be ready..."
-              kubectl rollout status deployment solar-system -n ${{ vars.NAMESPACE }} --timeout=120s
+    #       - name: Wait for Services to Start
+    #         run: |
+    #           echo "Waiting for services to be ready..."
+    #           kubectl rollout status deployment solar-system -n ${{ vars.NAMESPACE }} --timeout=120s
 
-          - name: Deploy Ingress (Triggers ALB Creation)
-            run: |
-              kubectl apply -f kubernetes/development/ingress.yaml
+    #       - name: Deploy Ingress (Triggers ALB Creation)
+    #         run: |
+    #           kubectl apply -f kubernetes/development/ingress.yaml
 
-          - name: Wait for ALB to be Created
-            run: |
-              echo "Waiting for ALB DNS..."
-              sleep 120  # Adjust as needed for ALB provisioning
+    #       - name: Wait for ALB to be Created
+    #         run: |
+    #           echo "Waiting for ALB DNS..."
+    #           sleep 120  # Adjust as needed for ALB provisioning
 
-          - name: Get ALB DNS Name
-            id: alb-dns
-            run: |
-              ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-              echo "ALB_DNS_NAME=$ALB_DNS" >> $GITHUB_ENV
-              echo "ALB DNS: $ALB_DNS"
+    #       - name: Get ALB DNS Name
+    #         id: alb-dns
+    #         run: |
+    #           ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    #           echo "ALB_DNS_NAME=$ALB_DNS" >> $GITHUB_ENV
+    #           echo "ALB DNS: $ALB_DNS"
 
-          - name: Replace Tokens in Manifest Files
-            uses: cschleiden/replace-tokens@v1
-            with:
-              tokenPrefix: '_{_'
-              tokenSuffix: '_}_'
-              files: kubernetes/development/*.yaml
-            env:
-              NAMESPACE: ${{ vars.NAMESPACE }}
-              IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
-              REPLICAS: ${{ vars.REPLICAS }}
-              ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
+    #       - name: Replace Tokens in Manifest Files
+    #         uses: cschleiden/replace-tokens@v1
+    #         with:
+    #           tokenPrefix: '_{_'
+    #           tokenSuffix: '_}_'
+    #           files: kubernetes/development/*.yaml
+    #         env:
+    #           NAMESPACE: ${{ vars.NAMESPACE }}
+    #           IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
+    #           REPLICAS: ${{ vars.REPLICAS }}
+    #           ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
 
-          - name: Check Updated Manifest Files
-            run: |
-              cat kubernetes/development/*.yaml
+    #       - name: Check Updated Manifest Files
+    #         run: |
+    #           cat kubernetes/development/*.yaml
 
-          # - name: Create MongoDB Secret
-          #   run: |
-          #     echo "Using MongoDB Atlas (Production)"
-          #     kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
-          #     --from-literal=MONGO_URI=mongodb+srv://monkakp1998:ZHxIENgSzsZW2WTe@cluster0.xsudr4y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 \
-          #     --from-literal=MONGO_USERNAME=monkakp1998 \
-          #     --from-literal=MONGO_PASSWORD=ZHxIENgSzsZW2WTe \
-          #     --save-config \
-          #     --dry-run=client \
-          #     -o yaml | kubectl apply -f -
+    #       # - name: Create MongoDB Secret
+    #       #   run: |
+    #       #     echo "Using MongoDB Atlas (Production)"
+    #       #     kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+    #       #     --from-literal=MONGO_URI=mongodb+srv://monkakp1998:ZHxIENgSzsZW2WTe@cluster0.xsudr4y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 \
+    #       #     --from-literal=MONGO_USERNAME=monkakp1998 \
+    #       #     --from-literal=MONGO_PASSWORD=ZHxIENgSzsZW2WTe \
+    #       #     --save-config \
+    #       #     --dry-run=client \
+    #       #     -o yaml | kubectl apply -f -
 
-          - name: Final Deployment with ALB DNS
-            run: |
-              kubectl apply -f kubernetes/development/
+    #       - name: Final Deployment with ALB DNS
+    #         run: |
+    #           kubectl apply -f kubernetes/development/
