@@ -326,15 +326,24 @@ jobs:
             id: alb-dns
             run: |
               ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-              echo "ALB_DNS_NAME=$ALB_DNS" >> $GITHUB_ENV
+              echo "ALB_DNS=$ALB_DNS" >> $GITHUB_ENV
               echo "ALB DNS: $ALB_DNS"
+          - name: Use ALB DNS in another step
+            run: |
+                echo "The ALB DNS Name is ${{ steps.alb-dns.outputs.ALB_DNS }}"
+            
           - name: Check Ingress File Before Token Replacement
             run: |
                 cat kubernetes/development/ingress.yaml
 
-          - name: Replace Tokens in Ingress File
-            run: |
-                sed -i "s|_{_ALB_DNS_NAME_}_|${{ env.ALB_DNS_NAME }}|g" kubernetes/development/ingress.yaml
+          - name: Replace ALB DNS in Ingress File
+            uses: cschleiden/replace-tokens@v1
+            with:
+              tokenPrefix: '_{_'
+              tokenSuffix: '_}_'
+              files: kubernetes/development/ingress.yaml
+            env:
+              ALB_DNS: ${{ env.ALB_DNS }}
               
           - name: Check Ingress File After Token Replacement
             run: |
