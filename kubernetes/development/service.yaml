@@ -1,3 +1,25 @@
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   labels:
+#     app: solar-system
+#   name: solar-system
+#   namespace: development
+#   annotations:
+#     service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+# spec:
+#   type: LoadBalancer
+#   externalTrafficPolicy: Cluster
+#   ports:
+#     - port: 3000
+#       protocol: TCP
+#       targetPort: 3000
+#   selector:
+#     app: solar-system
+#   loadBalancerSourceRanges:
+#     - 0.0.0.0/0  # Allows access from anywhere
+
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,16 +27,12 @@ metadata:
     app: solar-system
   name: solar-system
   namespace: development
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
 spec:
-  type: LoadBalancer
-  externalTrafficPolicy: Cluster
+  type: ClusterIP  
   ports:
     - port: 3000
       protocol: TCP
       targetPort: 3000
   selector:
     app: solar-system
-  loadBalancerSourceRanges:
-    - 0.0.0.0/0  # Allows access from anywhere
+
