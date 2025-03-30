@@ -77,6 +77,17 @@ app.post('/planet', async function(req, res) {
 
 app.get('/live', (req, res) => res.json({ status: "live" }));
 app.get('/ready', (req, res) => res.json({ status: "ready" }));
+app.get('/os', (req, res) => {
+    res.json({ os: process.platform });  // Returns OS details
+});
+
+app.get('/live', (req, res) => {
+    res.json({ status: "live" });
+});
+app.get('/ready', (req, res) => {
+    res.json({ status: "ready" });
+});
+
 
 app.listen(3000, () => {
     console.log("🚀 Server successfully running on port - 3000");
