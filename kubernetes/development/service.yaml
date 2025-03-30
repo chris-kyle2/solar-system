@@ -6,10 +6,13 @@ metadata:
   name: solar-system
   namespace: _{_NAMESPACE_}_
 spec:
-  ports:
-  - port: 3000
-    protocol: TCP
-    targetPort: 3000
-  selector:
-    app: solar-system 
   type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  ports:
+    - port: 3000
+      protocol: TCP
+      targetPort: 3000
+  selector:
+    app: solar-system
+  loadBalancerSourceRanges:
+    - 0.0.0.0/0  # Allows access from anywhere
