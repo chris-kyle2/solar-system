@@ -58,8 +58,8 @@ jobs:
               if: always()
               uses: actions/upload-artifact@v4
               with:
-                name: test-results-${{ github.run_id }}
-                path: test-results
+                name: Mocha-test-results
+                path: test-results.xml
     Code-Coverage:
         name: Code Coverage
         services:
@@ -96,7 +96,7 @@ jobs:
               uses: actions/upload-artifact@v4
 
               with:
-                name: coverage-${{ github.run_id }}
+                name: Code-Coverage-Result
                 path: coverage
                 retention-days: 1
 
@@ -110,13 +110,13 @@ jobs:
         - name: Download Unit-testing reports
           uses: actions/download-artifact@v4
           with:
-            name: test-results-${{ github.run_id }}
-            path: test-results
+            name: Mocha-Test-Results
+            
         - name: Download Code-Coverage reports
           uses: actions/download-artifact@v4
           with:
-            name: coverage-${{ github.run_id }}
-            path: coverage
+            name: Code-Coverage-Result
+            
         - name: Upload Unit-testing reports to s3
           uses: jakejarvis/s3-sync-action@master
           with:
@@ -126,7 +126,7 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_REGION: ${{ secrets.REGION }}  
-            SOURCE_DIR: test-results
+            SOURCE_DIR: Mocha-test-results
         - name: Upload Code-Coverage reports to s3
           uses: jakejarvis/s3-sync-action@master
           with:
@@ -136,7 +136,7 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_REGION: ${{ secrets.REGION }}  
-            SOURCE_DIR: coverage
+            SOURCE_DIR: Code-Coverage-Result
         
     Docker:
         name: login-docker
