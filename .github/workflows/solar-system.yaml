@@ -330,25 +330,29 @@ jobs:
               echo "ALB DNS: $ALB_DNS"
           - name: Check Ingress File Before Token Replacement
             run: |
-                cat kubernetes/development/ingress.yaml
+                cat solar-system/kubernetes/development/ingress.yaml
 
           - name: Replace Tokens in Manifest Files (With ALB DNS)
             uses: cschleiden/replace-tokens@v1
             with:
               tokenPrefix: '_{_'
               tokenSuffix: '_}_'
-              files: kubernetes/development/ingress.yaml
+              files: solar-system/kubernetes/development/ingress.yaml
             env:
               NAMESPACE: ${{ vars.NAMESPACE }}
               ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
+          - name: Check Ingress File After Token Replacement
+            run: |
+                echo "After replacement:"
+                cat solar-system/kubernetes/development/deployment.yaml
 
           - name: Check Updated Manifest Files
             run: |
-              cat kubernetes/development/*.yaml
+              cat solar-system/kubernetes/development/*.yaml
 
           - name: Final Deployment with ALB DNS
             run: |
-                kubectl apply -f kubernetes/development/ingress.yaml
+                kubectl apply -f solar-system/kubernetes/development/ingress.yaml
 
         
 
