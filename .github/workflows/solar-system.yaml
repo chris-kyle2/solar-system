@@ -141,7 +141,7 @@ jobs:
         
     Docker:
         name: login-docker
-        # needs: [unit-testing, Code-Coverage]
+        needs: [unit-testing, Code-Coverage]
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Code
