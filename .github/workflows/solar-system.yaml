@@ -237,6 +237,9 @@ jobs:
     Dev-Deploy:
         name: deploy-to dev cluster
         needs: [Docker]
+        environment:
+          name: development
+          url: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
         outputs:
           APP_INGRESS_HOST: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
         runs-on: ubuntu-latest
