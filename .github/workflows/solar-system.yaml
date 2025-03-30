@@ -322,6 +322,8 @@ jobs:
             run: |
               kubectl apply -f kubernetes/development/ingress.yaml
 
+
+              
           # - name: Wait for ALB to be Created
           #   run: |
           #     echo "Waiting for ALB DNS..."

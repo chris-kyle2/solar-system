@@ -13,6 +13,7 @@ metadata:
     alb.ingress.kubernetes.io/load-balancer-name: solar-system-alb
     alb.ingress.kubernetes.io/group.name: solar-system-group
 spec:
+  ingressClassName: alb
   rules:
     - host: ""  
       http:
