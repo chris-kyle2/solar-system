@@ -562,7 +562,20 @@ jobs:
               URL: ${{ needs.Prod-Environment-Deploy.outputs.APP_INGRESS_HOST }}
             run: |
               curl -s http://${{ env.URL }}/live -k | jq .
+    
 
+    slackNotification:
+      name: Slack Notification Demo
+      needs: [Dev-Environment-Deploy, Prod-Environment-Deploy]
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@master
+      - name: Slack Notification Demo
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ vars.SLACK_INCOMING_WEBHOOK }}
+          SLACK_MESSAGE: 'Demo''ing the Slack Notification'
+          SLACK_TITLE: 'Slack Notification Demo'
 
 
 
