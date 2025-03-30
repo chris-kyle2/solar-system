@@ -334,20 +334,18 @@ jobs:
             with:
               tokenPrefix: '_{_'
               tokenSuffix: '_}_'
-              files: kubernetes/development/*.yaml
+              files: kubernetes/development/ingress.yaml
             env:
               NAMESPACE: ${{ vars.NAMESPACE }}
-              IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
-              REPLICAS: ${{ vars.REPLICAS }}
               ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
 
           - name: Check Updated Manifest Files
             run: |
               cat kubernetes/development/*.yaml
-              
+
           - name: Final Deployment with ALB DNS
             run: |
-                kubectl apply -f kubernetes/development/
+                kubectl apply -f kubernetes/development/ingress.yaml
 
         
 
