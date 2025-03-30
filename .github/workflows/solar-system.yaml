@@ -326,7 +326,7 @@ jobs:
             id: alb-dns
             run: |
               ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-              echo "ALB_DNS=$ALB_DNS" >> $GITHUB_ENV
+              echo "ALB_DNS=$ALB_DNS" >> "$GITHUB_ENV"
               echo "ALB DNS: $ALB_DNS"
             
           - name: Check Ingress File Before Token Replacement
@@ -340,7 +340,7 @@ jobs:
               tokenSuffix: '_}_'
               files: kubernetes/development/ingress.yaml
             env:
-              ALB_DNS: ${{ vars.ALB_DNS }}
+              ALB_DNS: ${{ env.ALB_DNS }}
               
           - name: Check Ingress File After Token Replacement
             run: |
