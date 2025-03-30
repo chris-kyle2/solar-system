@@ -59,7 +59,7 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                 name: test-results-${{ github.run_id }}
-                path: test-results.xml
+                path: test-results
     Code-Coverage:
         name: Code Coverage
         services:
@@ -111,7 +111,7 @@ jobs:
           uses: actions/download-artifact@v4
           with:
             name: test-results-${{ github.run_id }}
-            path: test-results.xml
+            path: test-results
         - name: Download Code-Coverage reports
           uses: actions/download-artifact@v4
           with:
@@ -126,7 +126,7 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_REGION: ${{ secrets.REGION }}  
-            SOURCE_DIR: test-results-${{ github.run_id }}
+            SOURCE_DIR: test-results
         - name: Upload Code-Coverage reports to s3
           uses: jakejarvis/s3-sync-action@master
           with:
@@ -136,7 +136,7 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_REGION: ${{ secrets.REGION }}  
-            SOURCE_DIR: coverage-${{ github.run_id }}
+            SOURCE_DIR: coverage
         
     Docker:
         name: login-docker
