@@ -4,7 +4,7 @@ metadata:
   labels:
     app: solar-system
   name: solar-system
-  namespace: production
+  namespace: _{_NAMESPACE_}_
 spec:
   type: ClusterIP  
   ports:

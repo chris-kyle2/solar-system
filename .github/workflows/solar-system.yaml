@@ -366,7 +366,7 @@ jobs:
 
 
     Dev-Integration-testing:
-        name: Integration testing
+        name: Dev Integration testing
         needs: [Dev-Environment-Deploy]
         runs-on: ubuntu-latest
         steps:
@@ -507,8 +507,8 @@ jobs:
               
 
 
-    Integration-testing:
-        name: Integration testing
+    Prod-Integration-testing:
+        name: Prod Integration testing
         needs: [Prod-Environment-Deploy]
         runs-on: ubuntu-latest
         steps:
