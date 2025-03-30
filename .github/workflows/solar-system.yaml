@@ -237,6 +237,8 @@ jobs:
     Dev-Deploy:
         name: deploy-to dev cluster
         needs: [Docker]
+        outputs:
+          APP_INGRESS_HOST: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
         runs-on: ubuntu-latest
         steps:
           - name: Checkout Code
@@ -325,8 +327,7 @@ jobs:
           - name: Get ALB DNS Name
             id: alb-dns
             run: |
-              ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-              echo "ALB_DNS=$ALB_DNS" >> "$GITHUB_ENV"
+              echo "ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')" >> "$GITHUB_ENV"
               echo "ALB DNS: $ALB_DNS"
             
           - name: Check Ingress File Before Token Replacement
@@ -354,15 +355,23 @@ jobs:
           - name: Final Deployment with ALB DNS
             run: |
                 kubectl apply -f kubernetes/development/ingress.yaml
-
-        
-
-
-
-
-
+          - name: Set App ingress Host URL
+            id: app-ingress-host
+            run: |
+              echo "APP_INGRESS_HOST=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')" >> "$GITHUB_OUTPUT"
+              
 
 
+    Integration-testing:
+        name: Integration testing
+        needs: [Dev-Deploy]
+        runs-on: ubuntu-latest
+        steps:
+          - name: Test Url Using Curl and JQ
+            env:
+              URL: ${{ needs.Dev-Deploy.outputs.APP_INGRESS_HOST }}
+            run: |
+              curl -s http://${{ env.URL }}/live -k | jq .
 
 
 
