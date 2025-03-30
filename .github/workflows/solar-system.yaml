@@ -234,7 +234,7 @@ jobs:
     #         tags: |
     #           ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
     
-    Dev-Deploy:
+    Dev-Environment-Deploy:
         name: deploy-to dev cluster
         needs: [Docker]
         environment:
@@ -365,14 +365,156 @@ jobs:
               
 
 
-    Integration-testing:
+    Dev-Integration-testing:
         name: Integration testing
-        needs: [Dev-Deploy]
+        needs: [Dev-Environment-Deploy]
         runs-on: ubuntu-latest
         steps:
           - name: Test Url Using Curl and JQ
             env:
-              URL: ${{ needs.Dev-Deploy.outputs.APP_INGRESS_HOST }}
+              URL: ${{ needs.Dev-Environment-Deploy.outputs.APP_INGRESS_HOST }}
+            run: |
+              curl -s http://${{ env.URL }}/live -k | jq .
+    
+    Prod-Environment-Deploy:
+        name: deploy-to prod cluster
+        needs: [Docker, Dev-Integration-testing]
+        environment:
+          name: production
+          url: http://${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
+        outputs:
+          APP_INGRESS_HOST: ${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout Code
+            uses: actions/checkout@v4
+
+          - name: List Files
+            run: |
+              ls -la
+              ls -la kubernetes/development/
+
+          - name: Install Kubectl CLI
+            uses: azure/setup-kubectl@v3
+            with:
+              version: 'v1.26.0'
+
+          - name: Adding Context to kubectl
+            uses: azure/k8s-set-context@v3
+            with:
+              method: kubeconfig
+              kubeconfig: ${{ secrets.KUBECONFIG }}
+
+          - name: Configure AWS credentials
+            uses: aws-actions/configure-aws-credentials@v4
+            with:
+              aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+              aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              aws-region: us-east-1
+              role-skip-session-tagging: true
+
+          - name: Fetch Prod Cluster Details
+            run: |
+              echo "Fetching prod cluster details..."
+              kubectl version
+              kubectl get nodes -o wide
+              kubectl get svc
+              kubectl get pods -o wide
+
+          - name: Create Namespace
+            run: |
+              kubectl create namespace ${{ vars.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+          - name: Create MongoDB Secret (Before Deployment)
+            run: |
+                echo "Checking if MongoDB secret already exists..."
+                if kubectl -n ${{ vars.NAMESPACE }} get secret mongo-db-creds >/dev/null 2>&1; then
+                    echo "MongoDB secret already exists. Skipping creation."
+                else
+                    echo "Creating MongoDB Atlas secret..."
+                    kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+                      --from-literal=MONGO_URI=${{ secrets.MONGO_ATLAS_URI }} \
+                      --dry-run=client -o yaml | kubectl apply -f -
+                fi
+              
+
+          - name: Verify MongoDB Secret
+            run: |
+              echo "Verifying if MongoDB secret exists..."
+              kubectl get secret mongo-db-creds -n ${{ vars.NAMESPACE }}
+
+          - name: Replace Tokens in Manifest Files
+            uses: cschleiden/replace-tokens@v1
+            with:
+              tokenPrefix: '_{_'
+              tokenSuffix: '_}_'
+              files: kubernetes/production/*.yaml
+            env:
+              NAMESPACE: ${{ vars.NAMESPACE }}
+              IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
+              REPLICAS: ${{ vars.REPLICAS }}
+
+          - name: Deploy App Services (Without Ingress)
+            run: |
+              kubectl apply -f kubernetes/production/ --selector='component!=ingress'
+
+          - name: Wait for Services to Start
+            run: |
+              echo "Waiting for services to be ready..."
+              kubectl rollout status deployment solar-system -n ${{ vars.NAMESPACE }} --timeout=120s
+
+
+
+          - name: Wait for a few seconds
+            run: |
+              sleep 20  # Adjust as needed for ALB provisioning
+
+          - name: Get ALB DNS Name
+            id: alb-dns
+            run: |
+              echo "ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')" >> "$GITHUB_ENV"
+              echo "ALB DNS: $ALB_DNS"
+            
+          - name: Check Ingress File Before Token Replacement
+            run: |
+                cat kubernetes/production/ingress.yaml
+
+          - name: Replace ALB DNS in Ingress File
+            uses: cschleiden/replace-tokens@v1
+            with:
+              tokenPrefix: '_{_'
+              tokenSuffix: '_}_'
+              files: kubernetes/production/ingress.yaml
+            env:
+              ALB_DNS: ${{ env.ALB_DNS }}
+              
+          - name: Check Ingress File After Token Replacement
+            run: |
+                echo "After replacement:"
+                cat kubernetes/production/ingress.yaml
+
+          - name: Check Updated Manifest Files
+            run: |
+              cat kubernetes/production/*.yaml
+
+          - name: Final Deployment with ALB DNS
+            run: |
+                kubectl apply -f kubernetes/production/ingress.yaml
+          - name: Set App ingress Host URL
+            id: app-ingress-host
+            run: |
+              echo "APP_INGRESS_HOST=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')" >> "$GITHUB_OUTPUT"
+              
+
+
+    Integration-testing:
+        name: Integration testing
+        needs: [Prod-Environment-Deploy]
+        runs-on: ubuntu-latest
+        steps:
+          - name: Test Url Using Curl and JQ
+            env:
+              URL: ${{ needs.Prod-Environment-Deploy.outputs.APP_INGRESS_HOST }}
             run: |
               curl -s http://${{ env.URL }}/live -k | jq .
 
