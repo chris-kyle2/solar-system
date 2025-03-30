@@ -14,9 +14,7 @@ env:
   MONGO_URI: 'mongodb://localhost:27017/testdb'
   MONGO_USER: ${{ vars.MONGO_USER }}
   MONGO_PASS: ${{ secrets.MONGO_PASS }}
-  MONGO_ATLAS_URI: ${{ secrets.MONGO_ATLAS_URI }}
-  MONGO_ATLAS_USER: ${{ secrets.MONGO_ATLAS_USER }}
-  MONGO_ATLAS_PASS: ${{ secrets.MONGO_ATLAS_PASS }}
+
   
 jobs:
     # unit-testing:
@@ -243,6 +241,7 @@ jobs:
         steps:
           - name: Checkout Code
             uses: actions/checkout@v4
+
           - name: List Files
             run: |
               ls -la
@@ -278,41 +277,18 @@ jobs:
           - name: Create Namespace
             run: |
               kubectl create namespace ${{ vars.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
-          - name: Replace Tokens in Manifest Files
-            uses: cschleiden/replace-tokens@v1
-            with:
-              tokenPrefix: '_{_'
-              tokenSuffix: '_}_'
-              files: kubernetes/development/*.yaml
-            env:
-                  NAMESPACE: ${{ vars.NAMESPACE }}
-                  IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
-                  REPLICAS: ${{ vars.REPLICAS }}
-          
-          - name: Deploy App Services (Without Ingress)
-            run: |
-              kubectl apply -f kubernetes/development/ --selector='component!=ingress'
 
-          - name: Wait for Services to Start
+          - name: Create MongoDB Secret (Before Deployment)
             run: |
-              echo "Waiting for services to be ready..."
-              kubectl rollout status deployment solar-system -n ${{ vars.NAMESPACE }} --timeout=120s
+              echo "Creating MongoDB Atlas secret..."
+              kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+              --from-literal=MONGO_URI=${{ secrets.MONGO_ATLAS_URI }} \
+              --save-config --dry-run=client -o yaml | kubectl apply -f -
 
-          - name: Deploy Ingress (Triggers ALB Creation)
+          - name: Verify MongoDB Secret
             run: |
-              kubectl apply -f kubernetes/development/ingress.yaml
-
-          - name: Wait for ALB to be Created
-            run: |
-              echo "Waiting for ALB DNS..."
-              sleep 120  # Adjust as needed for ALB provisioning
-
-          - name: Get ALB DNS Name
-            id: alb-dns
-            run: |
-              ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-              echo "ALB_DNS_NAME=$ALB_DNS" >> $GITHUB_ENV
-              echo "ALB DNS: $ALB_DNS"
+              echo "Verifying if MongoDB secret exists..."
+              kubectl get secret mongo-db-creds -n ${{ vars.NAMESPACE }}
 
           - name: Replace Tokens in Manifest Files
             uses: cschleiden/replace-tokens@v1
@@ -324,23 +300,48 @@ jobs:
               NAMESPACE: ${{ vars.NAMESPACE }}
               IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
               REPLICAS: ${{ vars.REPLICAS }}
-              ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
 
-          - name: Check Updated Manifest Files
+          - name: Deploy App Services (Without Ingress)
             run: |
-              cat kubernetes/development/*.yaml
+              kubectl apply -f kubernetes/development/ --selector='component!=ingress'
 
-          - name: Create MongoDB Secret
+          - name: Wait for Services to Start
             run: |
-              echo "Using MongoDB Atlas (Production)"
-              kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
-              --from-literal=MONGO_URI=mongodb+srv://monkakp1998:ZHxIENgSzsZW2WTe@cluster0.xsudr4y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 \
-              --from-literal=MONGO_USERNAME=monkakp1998 \
-              --from-literal=MONGO_PASSWORD=ZHxIENgSzsZW2WTe \
-              --save-config \
-              --dry-run=client \
-              -o yaml | kubectl apply -f -
+              echo "Waiting for services to be ready..."
+              kubectl rollout status deployment solar-system -n ${{ vars.NAMESPACE }} --timeout=120s
 
-          - name: Final Deployment with ALB DNS
-            run: |
-              kubectl apply -f kubernetes/development/
+          # - name: Deploy Ingress (Triggers ALB Creation)
+          #   run: |
+          #     kubectl apply -f kubernetes/development/ingress.yaml
+
+          # - name: Wait for ALB to be Created
+          #   run: |
+          #     echo "Waiting for ALB DNS..."
+          #     sleep 120  # Adjust as needed for ALB provisioning
+
+          # - name: Get ALB DNS Name
+          #   id: alb-dns
+          #   run: |
+          #     ALB_DNS=$(kubectl get ingress solar-system -n ${{ vars.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          #     echo "ALB_DNS_NAME=$ALB_DNS" >> $GITHUB_ENV
+          #     echo "ALB DNS: $ALB_DNS"
+
+          # - name: Replace Tokens in Manifest Files (With ALB DNS)
+          #   uses: cschleiden/replace-tokens@v1
+          #   with:
+          #     tokenPrefix: '_{_'
+          #     tokenSuffix: '_}_'
+          #     files: kubernetes/development/*.yaml
+          #   env:
+          #     NAMESPACE: ${{ vars.NAMESPACE }}
+          #     IMAGE: ${{ vars.DOCKER_USERNAME }}/solar-system:${{ github.sha }}
+          #     REPLICAS: ${{ vars.REPLICAS }}
+          #     ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
+
+          # - name: Check Updated Manifest Files
+          #   run: |
+          #     cat kubernetes/development/*.yaml
+
+          # - name: Final Deployment with ALB DNS
+          #   run: |
+          #     kubectl apply -f kubernetes/development/

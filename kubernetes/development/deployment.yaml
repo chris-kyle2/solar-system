@@ -22,12 +22,15 @@ spec:
         ports:
         - containerPort: 3000
           name: http
-          protocol: TCP
+          protocol: TCP 
         volumeMounts:
-          - name: mongo-secret-volume
-            mountPath: "/mnt/env_vars"
-            readOnly: true
-      volumes:
         - name: mongo-secret-volume
-          secret:
-            secretName: mongo-db-creds
+          mountPath: "/mnt/env_vars"
+          readOnly: true
+      volumes:
+      - name: mongo-secret-volume
+        secret:
+          secretName: mongo-db-creds
+          items:
+          - key: MONGO_URI
+            path: MONGO_URI  # This ensures it's readable by `envLoader.js`
