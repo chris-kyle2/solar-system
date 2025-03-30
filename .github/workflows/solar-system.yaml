@@ -17,86 +17,128 @@ env:
 
   
 jobs:
-    # unit-testing:
-    #     name: Unit Testing
-    #     strategy:
-    #         matrix:
-    #             node-version: [18]
-    #             os: [ubuntu-latest]
-    #     runs-on: ${{ matrix.os }}
-    #     services:
-    #         mongo:
-    #             image: mongo:latest
-    #             ports:
-    #                 - 27017:27017
-    #     steps:
-    #         - name: Checkout Code
-    #           uses: actions/checkout@v4
+    unit-testing:
+        name: Unit Testing
+        strategy:
+            matrix:
+                node-version: [18]
+                os: [ubuntu-latest]
+        runs-on: ${{ matrix.os }}
+        services:
+            mongo:
+                image: mongo:latest
+                ports:
+                    - 27017:27017
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
 
-    #         - name: Setup Node.js ${{ matrix.node-version }}
-    #           uses: actions/setup-node@v4
-    #           with:
-    #             node-version: ${{ matrix.node-version }}
+            - name: Setup Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                node-version: ${{ matrix.node-version }}
 
-    #         - name: Cache Dependencies
-    #           uses: actions/cache@v4
-    #           with:
-    #             path: node_modules
-    #             key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+            - name: Cache Dependencies
+              uses: actions/cache@v4
+              with:
+                path: node_modules
+                key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
 
-    #         - name: Install Dependencies
-    #           run: npm install
+            - name: Install Dependencies
+              run: npm install
 
-    #         - name: Wait for MongoDB to be Ready
-    #           run: sleep 20
+            - name: Wait for MongoDB to be Ready
+              run: sleep 20
 
-    #         - name: Run Database Initialization Script
-    #           run: node initDB.js
+            - name: Run Database Initialization Script
+              run: node initDB.js
 
-    #         - name: Run Unit Tests
-    #           run: npm test
-    #         - name: Archive test results
-    #           uses: actions/upload-artifact@v4
-    #           with:
-    #             name: test-results-${{ github.run_id }}
-    #             path: test-results.xml
-    # Code-Coverage:
-    #     name: Code Coverage
-    #     services:
-    #         mongo:
-    #             image: mongo:latest
-    #             ports:
-    #                 - 27017:27017
-    #     runs-on: ubuntu-latest
-    #     steps:
-    #         - name: Checkout Code
-    #           uses: actions/checkout@v4
-    #         - name: Setup Nodejs 18
-    #           uses: actions/setup-node@v4
-    #           with: 
-    #             node-version: 18
+            - name: Run Unit Tests
+              run: npm test
+            - name: Archive test results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                name: test-results-${{ github.run_id }}
+                path: test-results.xml
+    Code-Coverage:
+        name: Code Coverage
+        services:
+            mongo:
+                image: mongo:latest
+                ports:
+                    - 27017:27017
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+            - name: Setup Nodejs 18
+              uses: actions/setup-node@v4
+              with: 
+                node-version: 18
 
-    #         - name: Cache Dependencies
-    #           uses: actions/cache@v4
-    #           with:
-    #             path: node_modules
-    #             key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+            - name: Cache Dependencies
+              uses: actions/cache@v4
+              with:
+                path: node_modules
+                key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
                 
                 
-    #         - name: Install Dependencies
-    #           run: npm install
-    #         - name: Wait for MongoDB to be Ready
-    #           run: sleep 20
-    #         - name: Run Database Initialization Script
-    #           run: node initDB.js
-    #         - name: Run Code Coverage
-    #           run: npm run coverage
-    #         - name: Archive Coverage Report
-    #           uses: actions/upload-artifact@v4
-    #           with:
-    #             name: coverage-${{ github.run_id }}
-    #             path: coverage
-    #             retention-days: 1
+            - name: Install Dependencies
+              run: npm install
+            - name: Wait for MongoDB to be Ready
+              run: sleep 20
+            - name: Run Database Initialization Script
+              run: node initDB.js
+            - name: Run Code Coverage
+              run: npm run coverage
+            - name: Archive Coverage Report
+              if: always()
+              uses: actions/upload-artifact@v4
+
+              with:
+                name: coverage-${{ github.run_id }}
+                path: coverage
+                retention-days: 1
+
+
+    Upload-reports-to-s3:
+      name: Upload reports to s3
+      needs: [unit-testing, Code-Coverage]
+      runs-on: ubuntu-latest
+      continue-on-error: true
+      steps:
+        - name: Download Unit-testing reports
+          uses: actions/download-artifact@v4
+          with:
+            name: test-results-${{ github.run_id }}
+            path: test-results.xml
+        - name: Download Code-Coverage reports
+          uses: actions/download-artifact@v4
+          with:
+            name: coverage-${{ github.run_id }}
+            path: coverage
+        - name: Upload Unit-testing reports to s3
+          uses: jakejarvis/s3-sync-action@master
+          with:
+            args: --acl public-read --follow-symlinks --delete
+          env:
+            AWS_S3_BUCKET: ${{ secrets.UNIT_TESTING_S3_BUCKET }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION: ${{ secrets.REGION }}  
+            SOURCE_DIR: test-results-${{ github.run_id }}
+        - name: Upload Code-Coverage reports to s3
+          uses: jakejarvis/s3-sync-action@master
+          with:
+            args: --acl public-read --follow-symlinks --delete
+          env:
+            AWS_S3_BUCKET: ${{ secrets.CODE_COVERAGE_S3_BUCKET }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION: ${{ secrets.REGION }}  
+            SOURCE_DIR: coverage-${{ github.run_id }}
+        
     Docker:
         name: login-docker
         # needs: [unit-testing, Code-Coverage]
