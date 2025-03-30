@@ -317,10 +317,10 @@ jobs:
               kubectl rollout status deployment solar-system -n ${{ vars.NAMESPACE }} --timeout=120s
 
 
-              
-          # - name: Deploy Ingress (Triggers ALB Creation)
-          #   run: |
-          #     kubectl apply -f kubernetes/development/ingress.yaml
+
+          - name: Deploy Ingress (Triggers ALB Creation)
+            run: |
+              kubectl apply -f kubernetes/development/ingress.yaml
 
           # - name: Wait for ALB to be Created
           #   run: |
