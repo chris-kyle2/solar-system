@@ -339,16 +339,15 @@ jobs:
               tokenSuffix: '_}_'
               files: kubernetes/development/ingress.yaml
             env:
-              NAMESPACE: ${{ vars.NAMESPACE }}
               ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
           - name: Check Ingress File After Token Replacement
             run: |
                 echo "After replacement:"
-                cat kubernetes/development/deployment.yaml
+                cat kubernetes/development/ingress.yaml
 
           - name: Check Updated Manifest Files
             run: |
-              cat solar-system/kubernetes/development/*.yaml
+              cat kubernetes/development/*.yaml
 
           - name: Final Deployment with ALB DNS
             run: |
