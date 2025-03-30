@@ -15,7 +15,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: ""  
+    - host: _{_ALB_DNS_NAME_}_
       http:
         paths:
           - path: /
