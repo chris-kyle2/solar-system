@@ -236,6 +236,7 @@ jobs:
     
     Dev-Environment-Deploy:
         name: deploy-to dev cluster
+        if: contains(github.ref, 'refs/heads/main') || contains(github.ref, '/feature/')
         needs: [Docker]
         environment:
           name: development
@@ -367,6 +368,7 @@ jobs:
 
     Dev-Integration-testing:
         name: Dev Integration testing
+        if: contains(github.ref, 'refs/heads/main') || contains(github.ref, '/feature/')
         needs: [Dev-Environment-Deploy]
         runs-on: ubuntu-latest
         steps:
@@ -378,7 +380,8 @@ jobs:
     
     Prod-Environment-Deploy:
         name: deploy-to prod cluster
-        needs: [Docker, Dev-Integration-testing]
+        if: contains(github.ref, 'refs/heads/main')
+        needs: [Docker]
         environment:
           name: production
           url: http://${{ steps.app-ingress-host.outputs.APP_INGRESS_HOST }}
@@ -509,6 +512,7 @@ jobs:
 
     Prod-Integration-testing:
         name: Prod Integration testing
+        if: contains(github.ref, 'refs/heads/main')
         needs: [Prod-Environment-Deploy]
         runs-on: ubuntu-latest
         steps:
