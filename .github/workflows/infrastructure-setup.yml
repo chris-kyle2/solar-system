@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CLUSTER_NAME: solar-ga  # Change this to your cluster name
+      CLUSTER_NAME: eksdemo2  # Change this to your cluster name
       REGION: us-east-1            # Change this to your region
-      VPC_ID: vpc-00c7249bb69c8e64e        # Change this to your VPC ID
+      VPC_ID: vpc-083b78f365bff846d        # Change this to your VPC ID
       ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
     steps:

@@ -10,20 +10,24 @@ spec:
   selector:
     matchLabels:
       app: solar-system
-  strategy: {}
   template:
     metadata:
       labels:
         app: solar-system
     spec:
       containers:
-      - image: _{_IMAGE_}_
+      - name: solar-system
+        image: _{_IMAGE_}_
         imagePullPolicy: Always
-        name: solar-system
         ports:
         - containerPort: 3000
           name: http
           protocol: TCP
-        envFrom:
-        - secretRef:
-            name: mongo-db-creds
+        volumeMounts:
+          - name: mongo-secret-volume
+            mountPath: "/mnt/env_vars"
+            readOnly: true
+      volumes:
+        - name: mongo-secret-volume
+          secret:
+            secretName: mongo-db-creds
