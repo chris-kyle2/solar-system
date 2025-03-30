@@ -67,15 +67,16 @@ jobs:
 
       - name: Create ALB Controller IAM Role
         run: |
-          eksctl create iamserviceaccount \
-            --cluster=${{ env.CLUSTER_NAME }} \
-            --namespace=kube-system \
-            --name=aws-load-balancer-controller \
-            --role-name=AmazonEKSLoadBalancerControllerRole \
-            --attach-policy-arn=arn:aws:iam::${{ env.ACCOUNT_ID }}:policy/AWSLoadBalancerControllerIAMPolicy \
-            --approve \
-            --region=${{ env.REGION }} || echo "Role already exists"
-
+              eksctl create iamserviceaccount \
+                --cluster=${{ env.CLUSTER_NAME }} \
+                --namespace=kube-system \
+                --name=aws-load-balancer-controller \
+                --role-name=AmazonEKSLoadBalancerControllerRole \
+                --attach-policy-arn=arn:aws:iam::${{ env.ACCOUNT_ID }}:policy/AWSLoadBalancerControllerIAMPolicy \
+                --approve \
+                --region=${{ env.REGION }} \
+                --override-existing-serviceaccounts || echo "Role already exists"
+          
       - name: Add Helm repo for ALB Controller
         run: |
           helm repo add eks https://aws.github.io/eks-charts
