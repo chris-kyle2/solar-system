@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const OS = require('os');
@@ -6,29 +7,39 @@ const mongoose = require("mongoose");
 const cors = require('cors');
 
 const app = express();
-
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '/')));
 app.use(cors());
-const MONGO_URI = process.env.NODE_ENV === "development"
-    ? "mongodb://appuser:apppassword@mongo:27017/solar-system-db?authSource=solar-system-db"
-    : process.env.MONGO_URI; // Use Kubernetes secret
-if (!MONGO_URI) {
-        console.error("❌ MONGO_URI is not set. Exiting...");
-        process.exit(1);
-    }
 
+// Function to check if running in Kubernetes
+function isKubernetes() {
+    return fs.existsSync('/mnt/env_vars/MONGO_URI');
+}
+
+// Read MongoDB URI: Prefer file in Kubernetes, else use ENV
+let MONGO_URI;
+if (isKubernetes()) {
+    console.log("🏗 Running inside Kubernetes - Reading MongoDB URI from secret file...");
+    MONGO_URI = fs.readFileSync('/mnt/env_vars/MONGO_URI', 'utf8').trim();
+} else {
+    console.log("🛠 Running in Docker or Locally - Using environment variable...");
+    MONGO_URI = process.env.MONGO_URI || "mongodb://appuser:apppassword@mongo:27017/solar-system-db?authSource=solar-system-db";
+}
+
+console.log(`🔍 Using MongoDB URI: ${MONGO_URI.startsWith('mongodb+srv') ? 'MongoDB Atlas (Production)' : 'Local MongoDB'}`);
 
 async function connectDB() {
     try {
         await mongoose.connect(MONGO_URI, {
+            user: process.env.MONGO_USERNAME,
+            pass: process.env.MONGO_PASSWORD,
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
-        console.log(`✅ Connected to MongoDB: ${MONGO_URI.includes("mongo:27017") ? "Local MongoDB" : "MongoDB Atlas"}`);
+        console.log("✅ MongoDB Connection Successful");
     } catch (err) {
         console.error("❌ Error connecting to MongoDB:", err);
-        process.exit(1);
+        process.exit(1); // Exit if connection fails
     }
 }
 
@@ -36,7 +47,6 @@ async function connectDB() {
 connectDB();
 
 const Schema = mongoose.Schema;
-
 const dataSchema = new Schema({
     name: String,
     id: Number,
@@ -65,34 +75,11 @@ app.post('/planet', async function(req, res) {
     }
 });
 
-app.get('/', async (req, res) => {
-    res.sendFile(path.join(__dirname, '/', 'index.html'));
-});
-
-app.get('/os', function(req, res) {
-    res.setHeader('Content-Type', 'application/json');
-    res.send({
-        "os": OS.hostname(),
-        "env": process.env.NODE_ENV
-    });
-});
-
-app.get('/live', function(req, res) {
-    res.setHeader('Content-Type', 'application/json');
-    res.send({
-        "status": "live"
-    });
-});
-
-app.get('/ready', function(req, res) {
-    res.setHeader('Content-Type', 'application/json');
-    res.send({
-        "status": "ready"
-    });
-});
+app.get('/live', (req, res) => res.json({ status: "live" }));
+app.get('/ready', (req, res) => res.json({ status: "ready" }));
 
 app.listen(3000, () => {
-    console.log("Server successfully running on port - 3000");
+    console.log("🚀 Server successfully running on port - 3000");
 });
 
 module.exports = app;
