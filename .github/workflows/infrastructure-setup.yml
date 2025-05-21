@@ -30,12 +30,6 @@ jobs:
         run: |
           oidc_id=$(aws eks describe-cluster --name ${{ env.CLUSTER_NAME }} --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
           echo "OIDC_ID=$oidc_id" >> $GITHUB_ENV
-
-      - name: Check if OIDC Provider Exists
-        id: check-oidc
-        run: |
-          oidc_exists=$(aws iam list-open-id-connect-providers | grep ${{ env.OIDC_ID }} | cut -d "/" -f4 || true)
-          echo "OIDC_EXISTS=$oidc_exists" >> $GITHUB_ENV
       - name: Install EKS CLI
         run: |
             # for ARM systems, set ARCH to: `arm64`, `armv6` or `armv7`
@@ -51,7 +45,6 @@ jobs:
 
             sudo mv /tmp/eksctl /usr/local/bin
       - name: Create OIDC Provider (if not exists)
-        if: steps.check-oidc.outputs.OIDC_EXISTS == ''
         run: |
           eksctl utils associate-iam-oidc-provider --cluster ${{ env.CLUSTER_NAME }} --approve
 
@@ -76,7 +69,7 @@ jobs:
                 --attach-policy-arn=arn:aws:iam::${{ env.ACCOUNT_ID }}:policy/AWSLoadBalancerControllerIAMPolicy \
                 --approve \
                 --region=${{ env.REGION }} \
-                --override-existing-serviceaccounts || echo "Role already exists"
+                --override-existing-serviceaccounts
           
       - name: Add Helm repo for ALB Controller
         run: |
